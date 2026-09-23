@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
-import { calculateCost, formatMoney, formatNumber } from '../domain/cost'
+import { calculateCost, formatNumber } from '../domain/cost'
+import { formatMoney } from '../domain/currency'
+import type { CurrencyCode } from '../domain/currency'
 import type { CostBreakdown } from '../domain/cost'
 import { axisLabel, buildChartModel, inputAtAxis, metricLabel } from '../domain/chart'
 import type { ChartAxis, ChartEntry, CostMetric } from '../domain/chart'
@@ -11,6 +13,8 @@ const props = defineProps<{
   metric: CostMetric
   cursorFraction: number
   selectedKey: string | null
+  currency: CurrencyCode
+  usdToCny: number
 }>()
 
 const emit = defineEmits<{
@@ -66,6 +70,10 @@ function updateFromDrag(event: PointerEvent) {
 function closestCostAtIntersection(entry: ChartEntry): CostBreakdown | null {
   if (!visibleIntersection.value) return null
   return calculateCost(inputAtAxis(entry.input, props.axis, visibleIntersection.value.axisValue))
+}
+
+function money(value: number, maximumFractionDigits = 6): string {
+  return formatMoney(value, props.currency, props.usdToCny, maximumFractionDigits)
 }
 
 const intersectionRows = computed(() => props.entries.map((entry) => ({
@@ -128,7 +136,7 @@ const intersectionRows = computed(() => props.entries.map((entry) => ({
         <g class="chart-grid">
           <template v-for="(tick, index) in yTicks" :key="`y-${index}`">
             <line :x1="plot.left" :x2="plot.right" :y1="yFor(tick)" :y2="yFor(tick)" />
-            <text :x="plot.left - 14" :y="yFor(tick) + 5" text-anchor="end">¥ {{ formatNumber(tick, yFractionDigits) }}</text>
+            <text :x="plot.left - 14" :y="yFor(tick) + 5" text-anchor="end">{{ money(tick, yFractionDigits) }}</text>
           </template>
           <template v-for="fraction in [0, 0.25, 0.5, 0.75, 1]" :key="`x-${fraction}`">
             <line class="vertical-grid" :x1="xFor(fraction)" :x2="xFor(fraction)" :y1="plot.top" :y2="plot.bottom" />
@@ -158,7 +166,7 @@ const intersectionRows = computed(() => props.entries.map((entry) => ({
           :class="{ 'is-selected': selectedKey === intersection.key }"
           role="button"
           tabindex="0"
-          :aria-label="`${intersection.firstName} 和 ${intersection.secondName} 在 ${axisLabel(axis, intersection.axisValue)} 时成本相交，${formatMoney(intersection.cost)}`"
+          :aria-label="`${intersection.firstName} 和 ${intersection.secondName} 在 ${axisLabel(axis, intersection.axisValue)} 时成本相交，${money(intersection.cost)}`"
           @pointerdown.stop
           @click.stop="emit('select-intersection', intersection.key)"
           @keydown.enter.prevent="emit('select-intersection', intersection.key)"
@@ -189,7 +197,7 @@ const intersectionRows = computed(() => props.entries.map((entry) => ({
       <div class="chart-legend" aria-label="方案图例">
         <span v-for="line in model.lines" :key="line.id">
           <i class="scenario-swatch" :class="`swatch-${colorIndexFor(line.id) % 16}`" />
-          {{ line.name }} <strong>{{ formatMoney(line.cursorCost) }}</strong>
+          {{ line.name }} <strong>{{ money(line.cursorCost) }}</strong>
         </span>
       </div>
     </div>
@@ -216,7 +224,7 @@ const intersectionRows = computed(() => props.entries.map((entry) => ({
         >
           <span>{{ intersection.firstName }} × {{ intersection.secondName }}</span>
           <strong>{{ axisLabel(axis, intersection.axisValue) }}</strong>
-          <small>{{ formatMoney(intersection.cost) }}</small>
+          <small>{{ money(intersection.cost) }}</small>
         </button>
       </div>
       <p v-if="!visibleIntersection" class="intersection-prompt">点选图上的交点，查看该参数下的方案明细。</p>
@@ -228,7 +236,7 @@ const intersectionRows = computed(() => props.entries.map((entry) => ({
           </div>
           <div>
             <span>{{ visibleIntersection.firstName }} 与 {{ visibleIntersection.secondName }}</span>
-            <strong>{{ formatMoney(visibleIntersection.cost) }} · {{ metricLabel(metric) }}</strong>
+            <strong>{{ money(visibleIntersection.cost) }} · {{ metricLabel(metric) }}</strong>
           </div>
         </div>
         <div class="crossing-table-wrap">
@@ -242,7 +250,7 @@ const intersectionRows = computed(() => props.entries.map((entry) => ({
                 <td>{{ formatNumber((entry.cost?.inputTokens ?? 0) / 1_000_000) }}M</td>
                 <td>{{ formatNumber((entry.cost?.cachedTokens ?? 0) / Math.max(entry.cost?.inputTokens ?? 1, 1) * 100, 4) }}%</td>
                 <td>{{ formatNumber((entry.cost?.outputTokens ?? 0) / Math.max(entry.cost?.inputTokens ?? 1, 1) * 100, 3) }}%</td>
-                <td>{{ entry.cost ? formatMoney(entry.cost.totalCost) : '—' }}</td>
+                <td>{{ entry.cost ? money(entry.cost.totalCost) : '—' }}</td>
               </tr>
             </tbody>
           </table>

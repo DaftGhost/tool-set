@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
-import { formatMoney } from '../domain/cost'
+import { formatMoney } from '../domain/currency'
+import type { CurrencyCode } from '../domain/currency'
 import type { ScenarioDraft, CostBreakdown } from '../domain/cost'
 
 export type ComparisonRow = {
@@ -13,6 +14,8 @@ const props = defineProps<{
   rows: ComparisonRow[]
   activeId: string
   limitReached: boolean
+  currency: CurrencyCode
+  usdToCny: number
 }>()
 
 const cheapestId = computed(() => {
@@ -63,7 +66,7 @@ function scenarioName(name: string): string {
           <span class="scenario-swatch" :class="`swatch-${index % 16}`" />
           <span class="scenario-copy">
             <span class="scenario-name">{{ scenarioName(row.draft.name) }}</span>
-            <span v-if="row.result" class="scenario-price">{{ formatMoney(row.result.totalCost) }}</span>
+            <span v-if="row.result" class="scenario-price">{{ formatMoney(row.result.totalCost, currency, usdToCny) }}</span>
             <span v-else class="scenario-price scenario-error">参数待修正</span>
           </span>
           <span v-if="row.draft.id === cheapestId" class="best-badge">最低</span>

@@ -68,14 +68,18 @@ button:focus-visible, a:focus-visible, input:focus-visible { outline: 3px solid 
 .brand-mark i:nth-child(3) { height: 9px; opacity: .86; }
 .brand-name { font-size: 16px; font-weight: 800; letter-spacing: -.055em; }
 .brand-name span { color: var(--primary); }
+.topbar-tools { display: flex; align-items: center; gap: 17px; }
+.currency-switch { display: inline-flex; gap: 2px; padding: 3px; border: 1px solid var(--line); border-radius: 7px; background: var(--surface-alt); }
+.currency-switch button { min-width: 40px; height: 27px; padding: 0 7px; border: 0; border-radius: 4px; color: var(--muted); background: transparent; font-family: var(--mono); font-size: 9px; cursor: pointer; }
+.currency-switch button[aria-pressed='true'] { color: var(--surface); background: var(--primary-deep); }
+.currency-switch button:disabled { color: var(--quiet); cursor: not-allowed; }
 .save-status { display: inline-flex; align-items: center; gap: 8px; color: var(--muted); font-size: 11px; }
 .save-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--primary); box-shadow: 0 0 0 3px var(--primary-soft); }
 .save-status.status-saving .save-dot { background: var(--brass); box-shadow: 0 0 0 3px var(--brass-soft); }
-.save-status.status-example .save-dot { background: var(--quiet); box-shadow: 0 0 0 3px var(--surface-alt); }
 .save-status.status-error .save-dot { background: var(--clay); box-shadow: 0 0 0 3px var(--clay-soft); }
 
 .main-content { width: min(100% - 56px, 1240px); margin: 0 auto; padding: 44px 0 72px; }
-.page-intro { display: flex; justify-content: space-between; align-items: end; gap: 40px; margin: 0 0 28px; }
+.page-intro { position: relative; display: flex; justify-content: space-between; align-items: end; gap: 40px; margin: 0 0 28px; }
 .eyebrow { margin: 0 0 9px; color: var(--muted); font-family: var(--mono); font-size: 10px; font-weight: 500; letter-spacing: .11em; line-height: 1.4; }
 .page-intro h1 { max-width: 740px; margin: 0; font-size: clamp(30px, 4.2vw, 46px); font-weight: 700; line-height: 1.2; letter-spacing: -.06em; }
 .page-intro h1 em { color: var(--primary); font-style: normal; white-space: nowrap; }
@@ -156,7 +160,15 @@ button:focus-visible, a:focus-visible, input:focus-visible { outline: 3px solid 
 .price-section { margin-top: 25px; padding-top: 21px; border-top: 1px solid var(--line-soft); }
 .price-heading { margin-bottom: 15px; }
 .price-heading h3 { font-size: 14px; }
-.price-heading > span { color: var(--muted); font-family: var(--mono); font-size: 10px; }
+.price-meta { min-width: 0; display: grid; justify-items: end; gap: 5px; }
+.price-unit-label { color: var(--muted); font-family: var(--mono); font-size: 10px; }
+.rate-status-row { position: absolute; top: -18px; right: 0; z-index: 1; width: min(100%, 360px); display: flex; align-items: center; justify-content: flex-end; gap: 8px; }
+.rate-status { min-width: 0; overflow: hidden; flex: 0 1 auto; color: var(--quiet); font-size: 9px; line-height: 1.45; text-align: right; text-overflow: ellipsis; white-space: nowrap; }
+.rate-cached { color: #8a6836; }
+.rate-unavailable { color: #9c5147; }
+.rate-refresh { min-height: 27px; flex: 0 0 auto; padding: 0 8px; border: 1px solid var(--line); border-radius: 5px; color: var(--primary-deep); background: var(--surface); font-size: 9px; cursor: pointer; }
+.rate-refresh:hover { border-color: #a9bba6; background: #f2f5f0; }
+.rate-refresh:disabled { color: var(--quiet); background: var(--surface-alt); cursor: wait; }
 .price-fields { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
 .price-fields .field-heading { min-height: 20px; }
 .price-fields .field-heading label { font-size: 11px; }
@@ -263,6 +275,7 @@ button:focus-visible, a:focus-visible, input:focus-visible { outline: 3px solid 
 @media (max-width: 860px) {
   .main-content { width: min(100% - 40px, 740px); padding-top: 36px; }
   .topbar { padding-inline: 20px; }
+  .topbar-tools { gap: 12px; }
   .page-intro { align-items: flex-start; flex-direction: column; gap: 13px; margin-bottom: 23px; }
   .intro-copy { max-width: 470px; margin: 0; }
   .workbench-grid { grid-template-columns: 1fr; }
@@ -272,9 +285,11 @@ button:focus-visible, a:focus-visible, input:focus-visible { outline: 3px solid 
 
 @media (max-width: 560px) {
   .topbar { height: 62px; padding-inline: 16px; }
+  .topbar-tools { gap: 8px; }
   .brand { gap: 8px; }
   .brand-mark { width: 25px; height: 25px; }
   .brand-name { font-size: 15px; }
+  .currency-switch button { min-width: 34px; height: 25px; padding-inline: 5px; font-size: 8px; }
   .save-status { gap: 7px; font-size: 9px; }
   .save-dot { width: 6px; height: 6px; }
   .main-content { width: calc(100% - 28px); padding: 28px 0 44px; }
@@ -318,6 +333,8 @@ button:focus-visible, a:focus-visible, input:focus-visible { outline: 3px solid 
   .step-button { width: 42px; height: 44px; }
   .stepper input { height: 44px; }
   .price-section { margin-top: 19px; padding-top: 17px; }
+  .price-heading { align-items: flex-start; flex-direction: column; gap: 10px; }
+  .price-meta { width: 100%; justify-items: start; }
   .price-fields { grid-template-columns: 1fr; gap: 11px; }
   .price-fields .field-heading { min-height: 0; margin-bottom: 6px; }
   .price-fields .field-heading label { font-size: 11px; }

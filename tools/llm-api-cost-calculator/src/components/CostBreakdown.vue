@@ -1,10 +1,13 @@
 <script setup lang="ts">
 import { computed } from 'vue'
-import { formatMoney, formatNumber } from '../domain/cost'
+import { formatNumber } from '../domain/cost'
+import { formatMoney } from '../domain/currency'
+import type { CurrencyCode } from '../domain/currency'
 import type { CostBreakdown } from '../domain/cost'
 
-const props = defineProps<{ result: CostBreakdown | null }>()
+const props = defineProps<{ result: CostBreakdown | null; currency: CurrencyCode; usdToCny: number }>()
 const total = computed(() => props.result?.totalCost ?? 0)
+const money = (value: number) => formatMoney(value, props.currency, props.usdToCny)
 const pieces = computed(() => {
   if (!props.result || total.value === 0) return [
     { key: 'cached', label: '缓存输入', color: 'cached', width: 0 },
@@ -26,16 +29,16 @@ const pieces = computed(() => {
         <p class="eyebrow">估算 · 单次请求</p>
         <h2 id="summary-title">成本拆分</h2>
       </div>
-      <span class="summary-scope">元 / 请求</span>
+      <span class="summary-scope">{{ currency }} / 请求</span>
     </div>
 
     <div v-if="result" class="summary-content">
       <div class="total-display">
         <span>预估总成本</span>
-        <strong>{{ formatMoney(result.totalCost) }}</strong>
+        <strong>{{ money(result.totalCost) }}</strong>
       </div>
 
-      <div class="cost-rail" role="img" :aria-label="`缓存输入 ${formatMoney(result.cachedCost)}，未缓存输入 ${formatMoney(result.uncachedCost)}，输出 ${formatMoney(result.outputCost)}`">
+      <div class="cost-rail" role="img" :aria-label="`缓存输入 ${money(result.cachedCost)}，未缓存输入 ${money(result.uncachedCost)}，输出 ${money(result.outputCost)}`">
         <span
           v-for="piece in pieces"
           :key="piece.key"
@@ -51,7 +54,7 @@ const pieces = computed(() => {
             <span class="line-title">输入成本</span>
             <small>{{ formatNumber(result.inputTokens / 1_000_000) }}M tokens</small>
           </div>
-          <strong>{{ formatMoney(result.inputCost) }}</strong>
+          <strong>{{ money(result.inputCost) }}</strong>
         </div>
         <div class="cost-line cost-subline">
           <span class="line-dot dot-cached" />
@@ -59,7 +62,7 @@ const pieces = computed(() => {
             <span class="line-title">缓存命中</span>
             <small>{{ formatNumber(result.cachedTokens / 1_000_000) }}M tokens</small>
           </div>
-          <strong>{{ formatMoney(result.cachedCost) }}</strong>
+          <strong>{{ money(result.cachedCost) }}</strong>
         </div>
         <div class="cost-line cost-subline">
           <span class="line-dot dot-uncached" />
@@ -67,7 +70,7 @@ const pieces = computed(() => {
             <span class="line-title">未缓存输入</span>
             <small>{{ formatNumber(result.uncachedTokens / 1_000_000) }}M tokens</small>
           </div>
-          <strong>{{ formatMoney(result.uncachedCost) }}</strong>
+          <strong>{{ money(result.uncachedCost) }}</strong>
         </div>
         <div class="cost-line">
           <span class="line-dot dot-output" />
@@ -75,7 +78,7 @@ const pieces = computed(() => {
             <span class="line-title">输出成本</span>
             <small>{{ formatNumber(result.outputTokens / 1_000_000) }}M tokens</small>
           </div>
-          <strong>{{ formatMoney(result.outputCost) }}</strong>
+          <strong>{{ money(result.outputCost) }}</strong>
         </div>
       </div>
 

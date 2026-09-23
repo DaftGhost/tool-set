@@ -1,14 +1,18 @@
 <script setup lang="ts">
-import { computed, onBeforeUnmount, ref, watch } from 'vue'
+import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import CostBreakdown from './components/CostBreakdown.vue'
 import CostChart from './components/CostChart.vue'
 import ParameterField from './components/ParameterField.vue'
 import ScenarioComparison from './components/ScenarioComparison.vue'
 import type { ComparisonRow } from './components/ScenarioComparison.vue'
-import { calculateCost, parseScenarioDraft } from './domain/cost'
+import { calculateCost, formatNumber, parseScenarioDraft } from './domain/cost'
 import type { DraftField, ScenarioDraft } from './domain/cost'
+import { convertPriceInputToCny, displayPriceInput } from './domain/currency'
+import type { CurrencyCode, ExchangeRateSnapshot } from './domain/currency'
 import type { ChartAxis, CostMetric } from './domain/chart'
 import { MAX_SCENARIOS, cloneScenario, exampleScenarios } from './domain/scenarios'
+import { fetchLatestUsdCnyRate } from './services/exchangeRate'
+import { loadCurrencyPreferences, saveCurrencyPreferences } from './storage/currencyStorage'
 import { loadScenarioState, saveScenarioState } from './storage/scenarioStorage'
 
 const loaded = loadScenarioState()
@@ -16,6 +20,12 @@ const scenarios = ref<ScenarioDraft[]>(loaded.status === 'loaded'
   ? loaded.state.scenarios.map((scenario) => ({ ...scenario }))
   : exampleScenarios.map((scenario) => ({ ...scenario })))
 const activeId = ref(loaded.status === 'loaded' ? loaded.state.activeId : scenarios.value[0].id)
+const currencyPreferences = loadCurrencyPreferences()
+const currency = ref<CurrencyCode>(currencyPreferences?.currency ?? 'CNY')
+const exchangeRate = ref<ExchangeRateSnapshot | null>(currencyPreferences?.rate ?? null)
+const rateStatus = ref<'loading' | 'current' | 'cached' | 'unavailable'>(exchangeRate.value ? 'cached' : 'loading')
+const currencyPreferencesSaveFailed = ref(false)
+const priceInputDrafts = ref<Record<string, Partial<Record<PriceField, string>>>>({})
 const chartAxis = ref<ChartAxis>('cacheHitPercent')
 const chartMetric = ref<CostMetric>('total')
 const chartCursorFraction = ref(0.97)
@@ -30,6 +40,26 @@ const saveNotice = ref(
 )
 
 const activeScenario = computed(() => scenarios.value.find(({ id }) => id === activeId.value) ?? scenarios.value[0])
+const usdToCny = computed(() => exchangeRate.value?.usdToCny ?? 1)
+const canDisplayUsd = computed(() => exchangeRate.value !== null)
+const currencyUnit = computed(() => currency.value === 'USD' ? 'USD / M tokens' : 'CNY / M tokens')
+const exchangeRateLabel = computed(() => {
+  if (!exchangeRate.value) {
+    return rateStatus.value === 'loading'
+      ? '正在获取最新日度参考汇率'
+      : '暂时无法获取汇率，人民币模式仍可使用'
+  }
+  const updateState = rateStatus.value === 'loading'
+    ? '正在刷新，当前使用缓存'
+    : rateStatus.value === 'cached'
+      ? 'Frankfurter 本地缓存'
+      : 'Frankfurter 最新参考'
+  const saveState = currencyPreferencesSaveFailed.value ? ' · 设置未能保存' : ''
+  return `${updateState} · 1 USD = ${formatNumber(exchangeRate.value.usdToCny, 4)} CNY · 数据日期 ${exchangeRate.value.date}${saveState}`
+})
+const exchangeRateSummary = computed(() => exchangeRate.value
+  ? `1 USD = ${formatNumber(exchangeRate.value.usdToCny, 4)} CNY · ${exchangeRate.value.date}`
+  : rateStatus.value === 'loading' ? '正在获取 USD/CNY 参考汇率' : 'USD/CNY 汇率暂不可用')
 const activeParsing = computed(() => parseScenarioDraft(activeScenario.value))
 const activeResult = computed(() => activeParsing.value.ok ? calculateCost(activeParsing.value.value) : null)
 const comparisonRows = computed<ComparisonRow[]>(() => scenarios.value.map((draft) => {
@@ -47,6 +77,8 @@ const chartEntries = computed(() => comparisonRows.value.flatMap(({ draft }, col
 const scenarioLimitReached = computed(() => scenarios.value.length >= MAX_SCENARIOS)
 
 let saveTimer: number | undefined
+let exchangeRateTimer: number | undefined
+let rateRequestInFlight = false
 
 watch([scenarios, activeId], () => {
   window.clearTimeout(saveTimer)
@@ -58,11 +90,72 @@ watch([scenarios, activeId], () => {
   }, 350)
 }, { deep: true })
 
+watch([currency, exchangeRate], () => {
+  currencyPreferencesSaveFailed.value = !saveCurrencyPreferences({
+    currency: currency.value,
+    rate: exchangeRate.value,
+  })
+})
+
 watch([chartAxis, chartMetric], () => {
   selectedIntersection.value = null
 })
 
-onBeforeUnmount(() => window.clearTimeout(saveTimer))
+onMounted(() => {
+  void refreshExchangeRate()
+  exchangeRateTimer = window.setInterval(() => void refreshExchangeRate(), 12 * 60 * 60 * 1000)
+})
+
+onBeforeUnmount(() => {
+  window.clearTimeout(saveTimer)
+  window.clearInterval(exchangeRateTimer)
+})
+
+type PriceField = 'cachedPrice' | 'uncachedPrice' | 'outputPrice'
+
+function priceInputValue(field: PriceField): string {
+  const draft = priceInputDrafts.value[activeId.value]?.[field]
+  return draft ?? displayPriceInput(activeScenario.value[field], currency.value, usdToCny.value)
+}
+
+function updatePriceField(field: PriceField, value: string) {
+  priceInputDrafts.value = {
+    ...priceInputDrafts.value,
+    [activeId.value]: { ...priceInputDrafts.value[activeId.value], [field]: value },
+  }
+  activeScenario.value[field] = convertPriceInputToCny(value, currency.value, usdToCny.value)
+}
+
+function finishPriceEdit(field: PriceField) {
+  const drafts = { ...priceInputDrafts.value }
+  const activeDrafts = { ...drafts[activeId.value] }
+  delete activeDrafts[field]
+  if (Object.keys(activeDrafts).length > 0) drafts[activeId.value] = activeDrafts
+  else delete drafts[activeId.value]
+  priceInputDrafts.value = drafts
+}
+
+function setCurrency(nextCurrency: CurrencyCode) {
+  if (nextCurrency === 'USD' && !exchangeRate.value) return
+  currency.value = nextCurrency
+  priceInputDrafts.value = {}
+}
+
+async function refreshExchangeRate() {
+  if (rateRequestInFlight) return
+  rateRequestInFlight = true
+  rateStatus.value = 'loading'
+  try {
+    const latestRate = await fetchLatestUsdCnyRate()
+    priceInputDrafts.value = {}
+    exchangeRate.value = latestRate
+    rateStatus.value = 'current'
+  } catch {
+    rateStatus.value = exchangeRate.value ? 'cached' : 'unavailable'
+  } finally {
+    rateRequestInFlight = false
+  }
+}
 
 function updateField(field: DraftField, value: string) {
   activeScenario.value[field] = value
@@ -97,7 +190,7 @@ function saveStatusLabel(): string {
   if (saveStatus.value === 'failed') return '保存失败'
   if (saveStatus.value === 'saved' || loaded.status === 'loaded') return '已保存'
   if (loaded.status === 'unavailable') return '无法保存'
-  return '示例方案'
+  return ''
 }
 </script>
 
@@ -108,22 +201,50 @@ function saveStatusLabel(): string {
         <span class="brand-mark" aria-hidden="true"><i /><i /><i /></span>
         <span class="brand-name">token<span>cost</span></span>
       </a>
-      <div
-        class="save-status"
-        :class="{
-          'status-error': saveStatus === 'failed' || (saveStatus === 'idle' && loaded.status === 'unavailable'),
-          'status-saving': saveStatus === 'saving',
-          'status-example': saveStatus === 'idle' && loaded.status !== 'loaded' && loaded.status !== 'unavailable',
-        }"
-        aria-live="polite"
-      >
-        <span class="save-dot" />
-        <span>{{ saveStatusLabel() }}</span>
+      <div class="topbar-tools">
+        <div class="currency-switch" role="group" aria-label="金额显示币种">
+          <button type="button" :aria-pressed="currency === 'CNY'" @click="setCurrency('CNY')">CNY</button>
+          <button
+            type="button"
+            :aria-pressed="currency === 'USD'"
+            :disabled="!canDisplayUsd"
+            :title="canDisplayUsd ? '显示美元金额' : '获取汇率后可切换美元'"
+            @click="setCurrency('USD')"
+          >USD</button>
+        </div>
+        <div
+          v-if="saveStatusLabel()"
+          class="save-status"
+          :class="{
+            'status-error': saveStatus === 'failed' || (saveStatus === 'idle' && loaded.status === 'unavailable'),
+            'status-saving': saveStatus === 'saving',
+          }"
+          aria-live="polite"
+        >
+          <span class="save-dot" />
+          <span>{{ saveStatusLabel() }}</span>
+        </div>
       </div>
     </header>
 
     <main id="top" class="main-content">
       <section class="page-intro" aria-labelledby="page-title">
+        <div class="rate-status-row">
+          <span
+            class="rate-status"
+            :class="`rate-${rateStatus}`"
+            role="status"
+            :aria-label="exchangeRateLabel"
+            :title="exchangeRateLabel"
+          >{{ exchangeRateSummary }}</span>
+          <button
+            class="rate-refresh"
+            type="button"
+            :disabled="rateStatus === 'loading'"
+            :aria-label="rateStatus === 'loading' ? '正在刷新 USD/CNY 参考汇率' : '刷新 USD/CNY 参考汇率'"
+            @click="refreshExchangeRate"
+          >{{ rateStatus === 'loading' ? '更新中' : '刷新汇率' }}</button>
+        </div>
         <div>
           <p class="eyebrow">LLM API · 调用成本</p>
           <h1 id="page-title">LLM API <em>成本计算器</em></h1>
@@ -141,6 +262,8 @@ function saveStatusLabel(): string {
         :rows="comparisonRows"
         :active-id="activeId"
         :limit-reached="scenarioLimitReached"
+        :currency="currency"
+        :usd-to-cny="usdToCny"
         @select="selectScenario"
         @remove="removeScenario"
         @add="addScenario"
@@ -202,42 +325,47 @@ function saveStatusLabel(): string {
                 <p class="eyebrow">单价 / 百万 Token</p>
                 <h3>模型单价</h3>
               </div>
-              <span>元 / M tokens</span>
+              <div class="price-meta">
+                <span class="price-unit-label">{{ currencyUnit }}</span>
+              </div>
             </div>
             <div class="price-fields">
               <ParameterField
                 id="cached-price"
                 label="缓存输入"
-                unit="¥ / M"
-                :model-value="activeScenario.cachedPrice"
+                :unit="currency === 'USD' ? '$ / M' : '¥ / M'"
+                :model-value="priceInputValue('cachedPrice')"
                 :step="0.01"
                 :error="activeParsing.ok ? undefined : activeParsing.errors.cachedPrice"
-                @update:model-value="updateField('cachedPrice', $event)"
+                @update:model-value="updatePriceField('cachedPrice', $event)"
+                @blur="finishPriceEdit('cachedPrice')"
               />
               <ParameterField
                 id="uncached-price"
                 label="未缓存输入"
-                unit="¥ / M"
-                :model-value="activeScenario.uncachedPrice"
+                :unit="currency === 'USD' ? '$ / M' : '¥ / M'"
+                :model-value="priceInputValue('uncachedPrice')"
                 :step="0.01"
                 :error="activeParsing.ok ? undefined : activeParsing.errors.uncachedPrice"
-                @update:model-value="updateField('uncachedPrice', $event)"
+                @update:model-value="updatePriceField('uncachedPrice', $event)"
+                @blur="finishPriceEdit('uncachedPrice')"
               />
               <ParameterField
                 id="output-price"
                 label="输出"
-                unit="¥ / M"
-                :model-value="activeScenario.outputPrice"
+                :unit="currency === 'USD' ? '$ / M' : '¥ / M'"
+                :model-value="priceInputValue('outputPrice')"
                 :step="0.01"
                 :error="activeParsing.ok ? undefined : activeParsing.errors.outputPrice"
-                @update:model-value="updateField('outputPrice', $event)"
+                @update:model-value="updatePriceField('outputPrice', $event)"
+                @blur="finishPriceEdit('outputPrice')"
               />
             </div>
-            <p class="parameter-note">所有单价统一按每百万 Token 填写；修改时结果会即时更新。</p>
+            <p class="parameter-note">切换币种会按页面显示的参考汇率换算单价、成本和图表。</p>
           </div>
         </section>
 
-        <CostBreakdown :result="activeResult" />
+        <CostBreakdown :result="activeResult" :currency="currency" :usd-to-cny="usdToCny" />
       </section>
 
       <CostChart
@@ -246,6 +374,8 @@ function saveStatusLabel(): string {
         v-model:cursor-fraction="chartCursorFraction"
         :entries="chartEntries"
         :selected-key="selectedIntersection"
+        :currency="currency"
+        :usd-to-cny="usdToCny"
         @select-intersection="selectedIntersection = $event"
       />
     </main>

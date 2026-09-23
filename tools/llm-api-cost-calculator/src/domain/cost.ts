@@ -126,7 +126,3 @@ export function calculateCost(input: CalculationInput): CostBreakdown {
 export function formatNumber(value: number, maximumFractionDigits = 3): string {
   return new Intl.NumberFormat('zh-CN', { maximumFractionDigits }).format(value)
 }
-
-export function formatMoney(value: number, maximumFractionDigits = 6): string {
-  return `¥ ${formatNumber(value, maximumFractionDigits)}`
-}

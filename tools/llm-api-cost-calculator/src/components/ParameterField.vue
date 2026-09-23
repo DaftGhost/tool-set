@@ -15,7 +15,10 @@ const props = withDefaults(defineProps<{
   min: 0,
 })
 
-const emit = defineEmits<{ 'update:modelValue': [value: string] }>()
+const emit = defineEmits<{
+  'update:modelValue': [value: string]
+  blur: []
+}>()
 const parsedValue = computed(() => Number(props.modelValue))
 
 function adjust(direction: -1 | 1) {
@@ -50,6 +53,7 @@ function adjust(direction: -1 | 1) {
         :aria-invalid="Boolean(error)"
         :aria-describedby="error ? `${id}-error` : undefined"
         @input="emit('update:modelValue', ($event.target as HTMLInputElement).value)"
+        @blur="emit('blur')"
       >
       <button
         class="step-button"
