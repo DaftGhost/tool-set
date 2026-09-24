@@ -184,6 +184,7 @@ button:focus-visible, a:focus-visible, input:focus-visible { outline: 3px solid 
 .catalog-option:disabled { color: var(--quiet); cursor: not-allowed; }
 .catalog-option-title { min-width: 0; display: flex; flex-wrap: wrap; align-items: baseline; gap: 3px 7px; font-size: 10px; }
 .catalog-option-title strong { color: var(--primary-deep); font-weight: 700; }
+.catalog-origin-badge { padding: 1px 5px; border-radius: 999px; color: var(--primary-deep); background: var(--primary-soft); font-size: 8px; font-weight: 700; line-height: 1.5; }
 .catalog-option code { color: var(--quiet); font-family: var(--mono); font-size: 9px; overflow-wrap: anywhere; text-align: right; }
 .catalog-option-prices { grid-column: 1 / -1; display: flex; flex-wrap: wrap; gap: 4px 10px; color: var(--muted); font-family: var(--mono); font-size: 9px; }
 .catalog-empty { margin: 0; padding: 10px; color: var(--muted); font-size: 10px; }

@@ -2,6 +2,7 @@
 import { computed, onMounted, ref, watch } from 'vue'
 import type { ModelPriceSource } from '../domain/cost'
 import { fetchModelCatalog } from '../services/modelCatalog'
+import type { ModelCatalogEntry } from '../services/modelCatalog'
 
 const props = defineProps<{
   selectedSource: ModelPriceSource | null
@@ -13,7 +14,7 @@ const emit = defineEmits<{
   clear: []
 }>()
 
-const catalog = ref<ModelPriceSource[]>([])
+const catalog = ref<ModelCatalogEntry[]>([])
 const catalogStatus = ref<'loading' | 'ready' | 'failed'>('loading')
 const search = ref('')
 const suggestionsOpen = ref(false)
@@ -24,8 +25,8 @@ const matchingModels = computed(() => {
   const query = search.value.trim().toLocaleLowerCase()
   if (!query) return catalog.value
 
-  return catalog.value.filter((model) =>
-    `${model.providerName} ${model.providerId} ${model.modelName} ${model.modelId}`
+  return catalog.value.filter(({ source }) =>
+    `${source.providerName} ${source.providerId} ${source.modelName} ${source.modelId}`
       .toLocaleLowerCase()
       .includes(query),
   )
@@ -64,9 +65,9 @@ function optionId(index: number): string {
   return `model-catalog-option-${index}`
 }
 
-function isSelected(model: ModelPriceSource): boolean {
-  return props.selectedSource?.providerId === model.providerId
-    && props.selectedSource.modelId === model.modelId
+function isSelected(source: ModelPriceSource): boolean {
+  return props.selectedSource?.providerId === source.providerId
+    && props.selectedSource.modelId === source.modelId
 }
 
 function onSearchInput() {
@@ -109,10 +110,10 @@ function onSearchKeydown(event: KeyboardEvent) {
   }
 }
 
-function selectModel(model: ModelPriceSource) {
+function selectModel(entry: ModelCatalogEntry) {
   if (!props.exchangeRateAvailable) return
-  emit('select', model)
-  search.value = `${model.providerName} · ${model.modelName}`
+  emit('select', entry.source)
+  search.value = `${entry.source.providerName} · ${entry.source.modelName}`
   suggestionsOpen.value = false
   activeIndex.value = -1
 }
@@ -175,23 +176,24 @@ onMounted(() => void refreshCatalog())
             :id="optionId(index)"
             :key="optionId(index)"
             class="catalog-option"
-            :class="{ 'is-active': activeIndex === index, 'is-selected': isSelected(model) }"
+            :class="{ 'is-active': activeIndex === index, 'is-selected': isSelected(model.source) }"
             type="button"
             role="option"
-            :aria-selected="isSelected(model)"
+            :aria-selected="isSelected(model.source)"
             :disabled="!exchangeRateAvailable"
             @pointerdown.prevent
             @mouseenter="activeIndex = index"
             @click="selectModel(model)"
           >
             <span class="catalog-option-title">
-              <strong>{{ model.providerName }}</strong>
-              <span>{{ model.modelName }}</span>
+              <strong>{{ model.source.providerName }}</strong>
+              <span>{{ model.source.modelName }}</span>
+              <span v-if="model.isFirstParty" class="catalog-origin-badge">厂商直供</span>
             </span>
-            <code>{{ model.modelId }}</code>
+            <code>{{ model.source.modelId }}</code>
             <span class="catalog-option-prices">
-              <span>输入 ${{ formatUsd(model.inputUsdPerMillion) }}</span>
-              <span>输出 ${{ formatUsd(model.outputUsdPerMillion) }}</span>
+              <span>输入 ${{ formatUsd(model.source.inputUsdPerMillion) }}</span>
+              <span>输出 ${{ formatUsd(model.source.outputUsdPerMillion) }}</span>
               <span>USD / M tokens</span>
             </span>
           </button>
