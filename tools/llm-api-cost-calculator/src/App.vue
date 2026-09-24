@@ -78,7 +78,6 @@ const chartEntries = computed(() => comparisonRows.value.flatMap(({ draft }, col
 const scenarioLimitReached = computed(() => scenarios.value.length >= MAX_SCENARIOS)
 
 let saveTimer: number | undefined
-let exchangeRateTimer: number | undefined
 let rateRequestInFlight = false
 
 watch([scenarios, activeId], () => {
@@ -110,13 +109,11 @@ watch([chartAxis, chartMetric], () => {
 })
 
 onMounted(() => {
-  void refreshExchangeRate()
-  exchangeRateTimer = window.setInterval(() => void refreshExchangeRate(), 12 * 60 * 60 * 1000)
+  if (!exchangeRate.value) void refreshExchangeRate()
 })
 
 onBeforeUnmount(() => {
   window.clearTimeout(saveTimer)
-  window.clearInterval(exchangeRateTimer)
 })
 
 type PriceField = 'cachedPrice' | 'uncachedPrice' | 'outputPrice'

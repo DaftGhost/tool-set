@@ -3,6 +3,7 @@ import { computed, onMounted, ref, watch } from 'vue'
 import type { ModelPriceSource } from '../domain/cost'
 import { fetchModelCatalog } from '../services/modelCatalog'
 import type { ModelCatalogEntry } from '../services/modelCatalog'
+import { loadModelCatalog, saveModelCatalog } from '../storage/modelCatalogStorage'
 
 const props = defineProps<{
   selectedSource: ModelPriceSource | null
@@ -14,8 +15,11 @@ const emit = defineEmits<{
   clear: []
 }>()
 
-const catalog = ref<ModelCatalogEntry[]>([])
-const catalogStatus = ref<'loading' | 'ready' | 'failed'>('loading')
+const cachedCatalog = loadModelCatalog()
+const catalog = ref<ModelCatalogEntry[]>(cachedCatalog ?? [])
+const catalogStatus = ref<'loading' | 'ready' | 'failed' | 'refresh-failed'>(cachedCatalog ? 'ready' : 'loading')
+const catalogIsCached = ref(cachedCatalog !== null)
+const catalogIsRefreshing = ref(false)
 const search = ref('')
 const suggestionsOpen = ref(false)
 const activeIndex = ref(-1)
@@ -46,7 +50,9 @@ const activeOptionId = computed(() => activeIndex.value >= 0
 const catalogStatusText = computed(() => {
   if (catalogStatus.value === 'loading') return '正在读取 models.dev 目录…'
   if (catalogStatus.value === 'failed') return '目录暂时无法载入；现有方案仍可继续使用。'
-  return `已载入 ${catalog.value.length.toLocaleString('zh-CN')} 个可选模型`
+  if (catalogStatus.value === 'refresh-failed') return '刷新失败，继续使用当前模型目录。'
+  const cacheNote = catalogIsCached.value ? ' · 浏览器缓存' : ' · 本地缓存写入失败'
+  return `已载入 ${catalog.value.length.toLocaleString('zh-CN')} 个可选模型${cacheNote}`
 })
 
 const availabilityHint = computed(() => props.exchangeRateAvailable
@@ -125,13 +131,17 @@ function selectModel(entry: ModelCatalogEntry) {
 async function refreshCatalog() {
   suggestionsOpen.value = false
   activeIndex.value = -1
-  catalogStatus.value = 'loading'
+  catalogIsRefreshing.value = true
+  if (catalog.value.length === 0) catalogStatus.value = 'loading'
   try {
-    catalog.value = await fetchModelCatalog()
+    const refreshedCatalog = await fetchModelCatalog()
+    catalog.value = refreshedCatalog
+    catalogIsCached.value = saveModelCatalog(refreshedCatalog)
     catalogStatus.value = 'ready'
   } catch {
-    catalog.value = []
-    catalogStatus.value = 'failed'
+    catalogStatus.value = catalog.value.length > 0 ? 'refresh-failed' : 'failed'
+  } finally {
+    catalogIsRefreshing.value = false
   }
 }
 
@@ -139,7 +149,9 @@ function formatUsd(value: number): string {
   return new Intl.NumberFormat('en-US', { maximumFractionDigits: 6 }).format(value)
 }
 
-onMounted(() => void refreshCatalog())
+onMounted(() => {
+  if (!cachedCatalog) void refreshCatalog()
+})
 </script>
 
 <template>
@@ -148,8 +160,8 @@ onMounted(() => void refreshCatalog())
       <label for="model-catalog-search">选择模型定价</label>
       <div class="catalog-actions">
         <a href="https://models.dev/" target="_blank" rel="noopener noreferrer">models.dev ↗</a>
-        <button type="button" :disabled="catalogStatus === 'loading'" @click="refreshCatalog">
-          {{ catalogStatus === 'loading' ? '载入中' : '刷新目录' }}
+        <button type="button" :disabled="catalogIsRefreshing" @click="refreshCatalog">
+          {{ catalogIsRefreshing ? '更新中' : '刷新目录' }}
         </button>
       </div>
     </div>
@@ -166,8 +178,8 @@ onMounted(() => void refreshCatalog())
         :aria-activedescendant="suggestionsOpen ? activeOptionId : undefined"
         autocomplete="off"
         placeholder="搜索厂商或模型名称"
-        :disabled="catalogStatus !== 'ready'"
-        @focus="suggestionsOpen = catalogStatus === 'ready' && search.trim().length > 0"
+        :disabled="catalogStatus === 'loading' || catalogStatus === 'failed'"
+        @focus="suggestionsOpen = catalogStatus !== 'loading' && catalogStatus !== 'failed' && search.trim().length > 0"
         @blur="suggestionsOpen = false"
         @input="onSearchInput"
         @keydown="onSearchKeydown"
