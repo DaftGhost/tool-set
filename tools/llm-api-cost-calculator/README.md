@@ -61,3 +61,8 @@ npm run preview
 ~~~
 
 `build` 先进行 Vue/TypeScript 类型检查，再生成部署用静态文件到 `dist/`。
+
+## 部署
+
+- GitHub Pages：https://daftghost.github.io/tool-set/
+- 推送到 `main` 或当前功能分支 `feature/llm-api-cost-calculator` 时，GitHub Actions 会构建并发布本工具；也可以在 Actions 页面手动运行部署工作流。该功能分支用于首次发布，合并到 `main` 后由主分支继续自动更新站点。

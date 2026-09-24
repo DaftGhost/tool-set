@@ -10,7 +10,7 @@
 
 ## 当前工具
 
-- [LLM API 成本计算器](tools/llm-api-cost-calculator/README.md)：浏览器端工具，无服务端依赖。
+- [LLM API 成本计算器](tools/llm-api-cost-calculator/README.md)：[在线使用](https://daftghost.github.io/tool-set/)，浏览器端工具，无服务端依赖。
 
 ## 添加工具
 
