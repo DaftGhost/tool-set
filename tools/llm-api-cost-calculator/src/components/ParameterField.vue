@@ -10,9 +10,11 @@ const props = withDefaults(defineProps<{
   min?: number
   max?: number
   error?: string
+  readOnly?: boolean
 }>(), {
   step: 1,
   min: 0,
+  readOnly: false,
 })
 
 const emit = defineEmits<{
@@ -36,8 +38,9 @@ function adjust(direction: -1 | 1) {
       <label :for="id">{{ label }}</label>
       <span class="field-unit">{{ unit }}</span>
     </div>
-    <div class="stepper">
+    <div class="stepper" :class="{ 'is-readonly': readOnly }">
       <button
+        v-if="!readOnly"
         class="step-button"
         type="button"
         :aria-label="`减少${label}`"
@@ -50,12 +53,14 @@ function adjust(direction: -1 | 1) {
         inputmode="decimal"
         autocomplete="off"
         maxlength="40"
+        :readonly="readOnly"
         :aria-invalid="Boolean(error)"
         :aria-describedby="error ? `${id}-error` : undefined"
-        @input="emit('update:modelValue', ($event.target as HTMLInputElement).value)"
+        @input="!readOnly && emit('update:modelValue', ($event.target as HTMLInputElement).value)"
         @blur="emit('blur')"
       >
       <button
+        v-if="!readOnly"
         class="step-button"
         type="button"
         :aria-label="`增加${label}`"

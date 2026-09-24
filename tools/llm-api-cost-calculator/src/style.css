@@ -151,16 +151,47 @@ button:focus-visible, a:focus-visible, input:focus-visible { outline: 3px solid 
 .field-heading label { color: #455045; font-size: 12px; font-weight: 700; }
 .field-unit { color: var(--primary); font-family: var(--mono); font-size: 10px; white-space: nowrap; }
 .stepper { display: grid; grid-template-columns: 39px minmax(48px, 1fr) 39px; gap: 6px; }
+.stepper.is-readonly { grid-template-columns: minmax(0, 1fr); }
 .step-button { width: 39px; height: 42px; border: 1px solid var(--line); border-radius: 6px; color: var(--primary); background: #fff; font-size: 20px; font-weight: 500; line-height: 1; cursor: pointer; transition: border-color .15s ease, background .15s ease; }
 .step-button:hover { border-color: #a9bba6; background: #f2f5f0; }
 .stepper input { width: 100%; min-width: 0; height: 42px; padding: 0 8px; border: 1px solid var(--line-soft); border-radius: 6px; color: var(--ink); background: var(--surface-alt); font-family: var(--mono); font-size: 13px; text-align: center; }
 .stepper input:focus { border-color: var(--primary); outline: none; background: #fff; box-shadow: 0 0 0 3px rgb(76 112 83 / 10%); }
+.stepper input:read-only { border-color: #dce1da; color: var(--muted); background: #eef0eb; cursor: default; }
 .is-invalid .stepper input { border-color: #d09a8e; background: #fff9f7; }
 .field-error { min-height: 15px; margin: 5px 0 -3px; color: #a24d41; font-size: 10px; line-height: 1.4; }
 .price-section { margin-top: 25px; padding-top: 21px; border-top: 1px solid var(--line-soft); }
 .price-heading { margin-bottom: 15px; }
 .price-heading h3 { font-size: 14px; }
 .price-meta { min-width: 0; display: grid; justify-items: end; gap: 5px; }
+.model-catalog-picker { margin: 0 0 16px; padding: 12px; border: 1px solid var(--line-soft); border-radius: 7px; background: #f5f6f1; }
+.catalog-heading, .catalog-actions, .catalog-selection { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.catalog-heading { margin-bottom: 8px; }
+.catalog-heading label { color: #455045; font-size: 11px; font-weight: 700; }
+.catalog-actions { justify-content: flex-end; }
+.catalog-actions a { color: var(--primary); font-size: 10px; text-decoration: none; }
+.catalog-actions a:hover { text-decoration: underline; }
+.catalog-actions button, .catalog-selection button { min-height: 27px; padding: 0 8px; border: 1px solid var(--line); border-radius: 5px; color: var(--primary-deep); background: var(--surface); font-size: 10px; cursor: pointer; }
+.catalog-actions button:disabled { color: var(--quiet); cursor: wait; }
+.catalog-controls { position: relative; }
+.catalog-controls input { width: 100%; min-width: 0; min-height: 36px; padding: 0 9px; border: 1px solid var(--line); border-radius: 5px; color: var(--ink); background: var(--surface); font-size: 11px; }
+.catalog-controls input:disabled { color: var(--quiet); background: var(--surface-alt); cursor: not-allowed; }
+.catalog-results { max-height: 240px; margin-top: 5px; overflow: auto; border: 1px solid var(--line); border-radius: 5px; background: var(--surface); }
+.catalog-results [role='listbox'] { padding: 3px; }
+.catalog-option { width: 100%; display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 3px 8px; padding: 8px; border: 0; border-bottom: 1px solid var(--line-soft); color: var(--ink); background: transparent; text-align: left; cursor: pointer; }
+.catalog-option:last-child { border-bottom: 0; }
+.catalog-option:hover, .catalog-option.is-active { background: #f1f4ef; }
+.catalog-option.is-selected { box-shadow: inset 2px 0 0 var(--primary); }
+.catalog-option:disabled { color: var(--quiet); cursor: not-allowed; }
+.catalog-option-title { min-width: 0; display: flex; flex-wrap: wrap; align-items: baseline; gap: 3px 7px; font-size: 10px; }
+.catalog-option-title strong { color: var(--primary-deep); font-weight: 700; }
+.catalog-option code { color: var(--quiet); font-family: var(--mono); font-size: 9px; overflow-wrap: anywhere; text-align: right; }
+.catalog-option-prices { grid-column: 1 / -1; display: flex; flex-wrap: wrap; gap: 4px 10px; color: var(--muted); font-family: var(--mono); font-size: 9px; }
+.catalog-empty { margin: 0; padding: 10px; color: var(--muted); font-size: 10px; }
+.catalog-status { margin: 8px 0 0; color: var(--muted); font-size: 10px; }
+.catalog-note { margin: 4px 0 0; color: var(--quiet); font-size: 9px; line-height: 1.5; }
+.catalog-selection { margin-top: 9px; padding-top: 9px; border-top: 1px solid var(--line); color: var(--primary-deep); font-size: 10px; }
+.catalog-selection small { display: block; margin-top: 3px; color: var(--quiet); font-size: 9px; }
+.catalog-selection button { flex: 0 0 auto; }
 .price-unit-label { color: var(--muted); font-family: var(--mono); font-size: 10px; }
 .rate-status-row { position: absolute; top: -18px; right: 0; z-index: 1; width: min(100%, 360px); display: flex; align-items: center; justify-content: flex-end; gap: 8px; }
 .rate-status { min-width: 0; overflow: hidden; flex: 0 1 auto; color: var(--quiet); font-size: 9px; line-height: 1.45; text-align: right; text-overflow: ellipsis; white-space: nowrap; }
@@ -174,6 +205,7 @@ button:focus-visible, a:focus-visible, input:focus-visible { outline: 3px solid 
 .price-fields .field-heading label { font-size: 11px; }
 .price-fields .field-unit { font-size: 9px; }
 .price-fields .stepper { grid-template-columns: 31px minmax(40px, 1fr) 31px; gap: 4px; }
+.price-fields .stepper.is-readonly { grid-template-columns: minmax(0, 1fr); }
 .price-fields .step-button { width: 31px; height: 38px; font-size: 17px; }
 .price-fields .stepper input { height: 38px; padding: 0 3px; font-size: 11px; }
 .parameter-note { margin: 13px 0 0; color: var(--quiet); font-size: 10px; line-height: 1.65; }
@@ -336,6 +368,8 @@ button:focus-visible, a:focus-visible, input:focus-visible { outline: 3px solid 
   .price-heading { align-items: flex-start; flex-direction: column; gap: 10px; }
   .price-meta { width: 100%; justify-items: start; }
   .price-fields { grid-template-columns: 1fr; gap: 11px; }
+  .catalog-selection { align-items: flex-start; flex-direction: column; }
+  .catalog-selection button { width: 100%; }
   .price-fields .field-heading { min-height: 0; margin-bottom: 6px; }
   .price-fields .field-heading label { font-size: 11px; }
   .price-fields .field-unit { font-size: 9px; }

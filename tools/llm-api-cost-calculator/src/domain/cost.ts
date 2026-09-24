@@ -1,3 +1,14 @@
+export type ModelPriceSource = Readonly<{
+  providerId: string
+  providerName: string
+  modelId: string
+  modelName: string
+  inputUsdPerMillion: number
+  cacheReadUsdPerMillion: number
+  outputUsdPerMillion: number
+  lastUpdated: string | null
+}>
+
 export type ScenarioDraft = {
   id: string
   name: string
@@ -7,6 +18,7 @@ export type ScenarioDraft = {
   cachedPrice: string
   uncachedPrice: string
   outputPrice: string
+  modelPriceSource?: ModelPriceSource
 }
 
 export type CalculationInput = Readonly<{
@@ -30,7 +42,7 @@ export type CostBreakdown = Readonly<{
   totalCost: number
 }>
 
-export type DraftField = Exclude<keyof ScenarioDraft, 'id' | 'name'>
+export type DraftField = Exclude<keyof ScenarioDraft, 'id' | 'name' | 'modelPriceSource'>
 export type DraftErrors = Partial<Record<DraftField, string>>
 
 type ParsedDraft = { ok: true; value: CalculationInput } | { ok: false; errors: DraftErrors }

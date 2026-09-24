@@ -2,11 +2,12 @@
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import CostBreakdown from './components/CostBreakdown.vue'
 import CostChart from './components/CostChart.vue'
+import ModelCatalogPicker from './components/ModelCatalogPicker.vue'
 import ParameterField from './components/ParameterField.vue'
 import ScenarioComparison from './components/ScenarioComparison.vue'
 import type { ComparisonRow } from './components/ScenarioComparison.vue'
 import { calculateCost, formatNumber, parseScenarioDraft } from './domain/cost'
-import type { DraftField, ScenarioDraft } from './domain/cost'
+import type { DraftField, ModelPriceSource, ScenarioDraft } from './domain/cost'
 import { convertPriceInputToCny, displayPriceInput } from './domain/currency'
 import type { CurrencyCode, ExchangeRateSnapshot } from './domain/currency'
 import type { ChartAxis, CostMetric } from './domain/chart'
@@ -97,6 +98,13 @@ watch([currency, exchangeRate], () => {
   })
 })
 
+watch(exchangeRate, (rate) => {
+  if (!rate) return
+  for (const scenario of scenarios.value) {
+    if (scenario.modelPriceSource) applyCatalogPrices(scenario, scenario.modelPriceSource, rate.usdToCny)
+  }
+})
+
 watch([chartAxis, chartMetric], () => {
   selectedIntersection.value = null
 })
@@ -133,6 +141,29 @@ function finishPriceEdit(field: PriceField) {
   if (Object.keys(activeDrafts).length > 0) drafts[activeId.value] = activeDrafts
   else delete drafts[activeId.value]
   priceInputDrafts.value = drafts
+}
+
+function compactPrice(value: number): string {
+  return Number(value.toPrecision(15)).toString()
+}
+
+function applyCatalogPrices(scenario: ScenarioDraft, source: ModelPriceSource, usdToCnyRate: number) {
+  scenario.cachedPrice = compactPrice(source.cacheReadUsdPerMillion * usdToCnyRate)
+  scenario.uncachedPrice = compactPrice(source.inputUsdPerMillion * usdToCnyRate)
+  scenario.outputPrice = compactPrice(source.outputUsdPerMillion * usdToCnyRate)
+}
+
+function selectCatalogPrice(source: ModelPriceSource) {
+  activeScenario.value.modelPriceSource = { ...source }
+  activeScenario.value.name = `${source.providerName} · ${source.modelName}`.slice(0, 32)
+  applyCatalogPrices(activeScenario.value, source, usdToCny.value)
+  finishPriceEdit('cachedPrice')
+  finishPriceEdit('uncachedPrice')
+  finishPriceEdit('outputPrice')
+}
+
+function clearCatalogPrice() {
+  delete activeScenario.value.modelPriceSource
 }
 
 function setCurrency(nextCurrency: CurrencyCode) {
@@ -329,12 +360,19 @@ function saveStatusLabel(): string {
                 <span class="price-unit-label">{{ currencyUnit }}</span>
               </div>
             </div>
+            <ModelCatalogPicker
+              :selected-source="activeScenario.modelPriceSource ?? null"
+              :exchange-rate-available="canDisplayUsd"
+              @select="selectCatalogPrice"
+              @clear="clearCatalogPrice"
+            />
             <div class="price-fields">
               <ParameterField
                 id="cached-price"
                 label="缓存输入"
                 :unit="currency === 'USD' ? '$ / M' : '¥ / M'"
                 :model-value="priceInputValue('cachedPrice')"
+                :read-only="Boolean(activeScenario.modelPriceSource)"
                 :step="0.01"
                 :error="activeParsing.ok ? undefined : activeParsing.errors.cachedPrice"
                 @update:model-value="updatePriceField('cachedPrice', $event)"
@@ -345,6 +383,7 @@ function saveStatusLabel(): string {
                 label="未缓存输入"
                 :unit="currency === 'USD' ? '$ / M' : '¥ / M'"
                 :model-value="priceInputValue('uncachedPrice')"
+                :read-only="Boolean(activeScenario.modelPriceSource)"
                 :step="0.01"
                 :error="activeParsing.ok ? undefined : activeParsing.errors.uncachedPrice"
                 @update:model-value="updatePriceField('uncachedPrice', $event)"
@@ -355,6 +394,7 @@ function saveStatusLabel(): string {
                 label="输出"
                 :unit="currency === 'USD' ? '$ / M' : '¥ / M'"
                 :model-value="priceInputValue('outputPrice')"
+                :read-only="Boolean(activeScenario.modelPriceSource)"
                 :step="0.01"
                 :error="activeParsing.ok ? undefined : activeParsing.errors.outputPrice"
                 @update:model-value="updatePriceField('outputPrice', $event)"
