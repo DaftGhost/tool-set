@@ -21,12 +21,16 @@ const suggestionsOpen = ref(false)
 const activeIndex = ref(-1)
 const MAX_VISIBLE_RESULTS = 100
 
+function formatModelSearchLabel(source: ModelPriceSource): string {
+  return `${source.providerName} - ${source.modelName}`
+}
+
 const matchingModels = computed(() => {
   const query = search.value.trim().toLocaleLowerCase()
   if (!query) return catalog.value
 
   return catalog.value.filter(({ source }) =>
-    `${source.providerName} ${source.providerId} ${source.modelName} ${source.modelId}`
+    `${formatModelSearchLabel(source)} ${source.providerId} ${source.modelId}`
       .toLocaleLowerCase()
       .includes(query),
   )
@@ -51,7 +55,7 @@ const availabilityHint = computed(() => props.exchangeRateAvailable
 )
 
 watch(() => props.selectedSource, (source) => {
-  search.value = source ? `${source.providerName} · ${source.modelName}` : ''
+  search.value = source ? formatModelSearchLabel(source) : ''
   suggestionsOpen.value = false
   activeIndex.value = -1
 }, { immediate: true })
@@ -113,7 +117,7 @@ function onSearchKeydown(event: KeyboardEvent) {
 function selectModel(entry: ModelCatalogEntry) {
   if (!props.exchangeRateAvailable) return
   emit('select', entry.source)
-  search.value = `${entry.source.providerName} · ${entry.source.modelName}`
+  search.value = formatModelSearchLabel(entry.source)
   suggestionsOpen.value = false
   activeIndex.value = -1
 }
