@@ -304,7 +304,6 @@ function saveStatusLabel(): string {
               <p class="eyebrow">当前方案</p>
               <h2 id="parameters-title">调用参数</h2>
             </div>
-            <span class="editing-chip"><span />正在编辑</span>
           </div>
 
           <label class="scenario-name-label" for="scenario-name">方案名称</label>

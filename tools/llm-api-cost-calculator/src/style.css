@@ -140,8 +140,6 @@ button:focus-visible, a:focus-visible, input:focus-visible { outline: 3px solid 
 .panel-heading, .summary-topline, .price-heading { display: flex; align-items: center; justify-content: space-between; gap: 16px; }
 .panel-heading h2, .summary-topline h2, .price-heading h3 { margin: 0; font-size: 17px; font-weight: 700; letter-spacing: -.035em; }
 .panel-heading .eyebrow, .summary-topline .eyebrow, .price-heading .eyebrow { margin-bottom: 5px; }
-.editing-chip { display: inline-flex; align-items: center; gap: 7px; padding: 6px 9px; border: 1px solid #d6e0d4; border-radius: 20px; color: var(--primary-deep); background: #f0f4ee; font-size: 10px; white-space: nowrap; }
-.editing-chip span { width: 6px; height: 6px; border-radius: 50%; background: var(--primary); }
 .scenario-name-label { display: block; margin: 21px 0 7px; color: var(--muted); font-size: 11px; }
 .scenario-name-input { width: min(100%, 300px); min-height: 38px; padding: 0 11px; border: 1px solid var(--line); border-radius: 6px; color: var(--ink); background: #fff; font-size: 13px; font-weight: 700; }
 .scenario-name-input:focus { border-color: var(--primary); outline: none; box-shadow: 0 0 0 3px rgb(76 112 83 / 11%); }
@@ -357,7 +355,6 @@ button:focus-visible, a:focus-visible, input:focus-visible { outline: 3px solid 
   .line-copy small { font-size: 8px; }
   .cost-line > strong { font-size: 11px; }
   .cost-subline > strong { font-size: 10px; }
-  .editing-chip { padding: 5px 7px; font-size: 9px; }
   .scenario-name-label { margin-top: 16px; }
   .scenario-name-input { width: 100%; }
   .parameter-list { grid-template-columns: 1fr; gap: 14px; margin-top: 18px; }
