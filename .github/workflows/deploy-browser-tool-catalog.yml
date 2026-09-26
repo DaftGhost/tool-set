@@ -31,6 +31,9 @@ jobs:
           runtime: node@24
           install: false
 
+      - name: Install root dependencies
+        run: pnpm install --frozen-lockfile
+
       - name: Test site builder and catalog
         run: pnpm run test
 

@@ -4,12 +4,12 @@
 
 ## 本地开发整个站点
 
-需要 Node.js 24.12 或更高的 24.x 版本和 Corepack。根目录通过 `packageManager` 固定使用 pnpm 12.7.0；首次执行时 Corepack 会准备对应版本。首次使用时，在根目录和工具目录分别安装依赖：
+需要 Node.js 24.12 或更高的 24.x 版本和 Corepack。根目录通过 `packageManager` 固定使用 pnpm 12.7.0；首次执行时 Corepack 会准备对应版本。首次使用时，在根目录安装目录页和开发服务依赖，并在工具目录安装工具依赖：
 
 ~~~sh
-corepack pnpm install
+corepack pnpm install --frozen-lockfile
 cd tools/llm-api-cost-calculator
-corepack pnpm install
+corepack pnpm install --frozen-lockfile
 cd ../..
 ~~~
 
@@ -21,10 +21,10 @@ corepack pnpm dev
 
 默认访问 <http://localhost:5173/>，工具页面使用 `/tools/<工具目录名>/` 路径。根开发服务的默认地址配置在 `package.json` 的 `toolSet.devServer` 中，也可用 `TOOL_SET_DEV_PORT=5174 pnpm dev` 覆盖端口。计算器通过 Vite HMR 更新组件和样式；不支持 HMR 的工具可在元数据中声明 `dev.watch` 路径，文件变化时页面会自动刷新。按 `Ctrl+C` 会停止目录页和所有工具开发服务。
 
-开发模式不需要先生成构建目录。生产构建和静态预览仍独立运行：
+开发模式不需要先生成构建目录。首次生产构建前，先完成上方的根目录依赖安装；构建器会按各工具 `tool.json` 中的 `build.install` 安装工具依赖。生产构建和静态预览命令如下：
 
 ~~~sh
-corepack pnpm build
+corepack pnpm run build
 corepack pnpm run serve
 ~~~
 
@@ -42,7 +42,7 @@ corepack pnpm run test
 
 ~~~text
 tool-set/
-├── catalog/                         # 工具目录页的 HTML、CSS 和 JavaScript
+├── catalog/                         # React、TypeScript 和 Vite 工具目录页
 ├── tools/
 │   └── <browser-tool>/               # 每个工具独立管理源码、依赖和配置
 │       ├── README.md                 # 该工具的功能、技术栈和运行说明
@@ -53,7 +53,7 @@ tool-set/
 │   └── *.test.mjs                    # 开发服务、构建器和目录页测试
 ├── docs/                             # 跨工具的产品与运维资料
 ├── .github/workflows/                # 测试、全量构建和 Pages 部署流程
-├── package.json                      # 根级命令和开发服务默认地址
+├── package.json                      # 根级依赖、命令和开发服务默认地址
 └── site/                             # pnpm build 生成的完整静态站点
 ~~~
 

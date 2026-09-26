@@ -122,7 +122,7 @@ async function validatePublishedToolOutputs(outputDir, expectedSlugs) {
 
 export async function buildSite({
   toolsDir = path.join(repositoryRoot, 'tools'),
-  catalogDir = path.join(repositoryRoot, 'catalog'),
+  catalogDir = path.join(repositoryRoot, 'catalog', 'dist'),
   outputDir = path.join(repositoryRoot, 'site'),
 } = {}) {
   const resolvedToolsDir = path.resolve(toolsDir)
