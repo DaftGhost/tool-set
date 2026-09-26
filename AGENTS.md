@@ -1,18 +1,30 @@
-# 项目协作约定
+# Repository Guidelines
 
-本仓库用于维护一组独立工具，允许不同工具使用不同语言和技术栈。不要在没有具体工具需求时预选框架、依赖管理器或统一构建系统。
+## Project Structure & Modules
 
-## 目录归属
+This repository hosts independent tools that may use different languages and frameworks. `catalog/` contains the site catalog, `scripts/` contains the site builder and its tests, and `tools/<tool-name>/` owns each tool’s source, README, configuration, dependencies, and `tool.json` registration. Put cross-tool product or operations material in `docs/`. The root package coordinates catalog builds and tests; `site/` is generated output, so make changes in source directories instead. Keep each tool’s lockfile and build commands with that tool. Add shared packages only when multiple tools need the same implementation.
 
-- 每个工具及其专属前端、后端、命令行入口、配置和检查命令归 tools/<tool-name>/ 管理。
-- 跨工具的产品和运维资料归 docs/ 管理。
-- 根目录只放适用于整个仓库的说明和配置。
-- 只有至少两个真实使用者需要同一实现时，才创建 packages/ 共享模块；共享模块要用一个清楚的小接口隐藏内部细节。
+## Build, Test, and Development Commands
 
-## 修改约定
+Use Node.js 24.x and Corepack; the root package pins pnpm 12.7.0.
 
-- 开始修改前先读目标工具的 README 和局部 AGENTS.md（如果存在）。
-- 新工具的 README 记录语言与运行时、依赖安装、入口、配置、输入输出、错误行为和可用的构建或检查命令。
-- 跨语言工具各自管理依赖与锁文件；不要为了统一命令而引入尚无实际需求的工具链。
-- 不提交密钥、凭证或本地环境文件；需要示例时使用不含真实凭证的 .env.example。
-- 汇报验证时注明实际执行的命令和结果，并区分静态检查与运行时验证。
+- `corepack pnpm run test` runs the site-builder and catalog tests.
+- `corepack pnpm run build` builds the catalog and all registered browser tools into `site/`.
+- `corepack pnpm run serve` serves the built site locally at `http://localhost:9527/`.
+- For the calculator, run `cd tools/llm-api-cost-calculator && corepack pnpm install && corepack pnpm run dev`; use `corepack pnpm run typecheck` there for its TypeScript/Vue check.
+
+## Coding Style & Naming
+
+Use TypeScript (`.ts`/`.tsx`) for catalog and tool implementation code. Reject JavaScript (`.js`/`.jsx`) for new modules; migrate an existing JavaScript module to TypeScript before changing its behavior. Root Node build/server scripts and tests remain `.mjs` for the current Node runner. Use two-space indentation and semicolon-free style. Use camelCase for functions and module files, PascalCase for Vue components, and kebab-case for tool directory names (for example, `llm-api-cost-calculator`). Keep tool-specific formatting and linting choices local to that tool; the repository has no global formatter or linter.
+
+## Testing Guidelines
+
+Root tests use Node’s built-in `node:test` and `node:assert/strict`; name test files `*.test.mjs` and describe observable behavior in each test name. Run the root suite after changes to the builder or catalog, and run the affected tool’s own checks after changing it. No repository-wide coverage threshold is configured.
+
+## Commits and Pull Requests
+
+Recent history mostly uses Conventional Commit prefixes, including `feat:`, `fix(<scope>):`, and `chore(<scope>):`. Use a short imperative summary and scope tool-specific changes, such as `fix(llm-api-cost-calculator): handle empty input`. PRs should explain the change and affected tool, list the checks actually run, link a related issue when applicable, and include screenshots for visible UI changes.
+
+## Security and Configuration
+
+Keep credentials and local environment files out of version control. Use placeholders in `.env.example` when documenting required configuration; never commit real secrets.
