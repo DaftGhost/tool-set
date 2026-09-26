@@ -230,6 +230,7 @@ function saveStatusLabel(): string {
         <span class="brand-name">token<span>cost</span></span>
       </a>
       <div class="topbar-tools">
+        <a class="catalog-link" href="../../">所有工具</a>
         <div class="currency-switch" role="group" aria-label="金额显示币种">
           <button type="button" :aria-pressed="currency === 'CNY'" @click="setCurrency('CNY')">CNY</button>
           <button

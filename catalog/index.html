@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#edf3f4" />
+    <meta name="description" content="按用途浏览实用工具，找到适合当前任务的工具并直接使用。" />
+    <title>工具集 · 实用工具</title>
+    <link rel="stylesheet" href="./catalog.css" />
+    <script type="module" src="./catalog.js"></script>
+  </head>
+  <body>
+    <div class="page-shell">
+      <header class="site-header">
+        <a class="wordmark" href="./" aria-label="工具集首页">
+          <span class="wordmark-mark" aria-hidden="true"><i></i><i></i><i></i></span>
+          <span>工具集</span>
+        </a>
+      </header>
+
+      <main class="content">
+        <section class="intro" aria-labelledby="page-title">
+          <h1 id="page-title">你想完成什么？</h1>
+          <p>按用途选择工具，打开后直接开始。</p>
+        </section>
+
+        <section class="tool-directory" aria-label="按用途选择工具">
+          <div id="tool-groups" class="tool-groups"></div>
+          <p id="catalog-message" class="catalog-message" role="status" aria-live="polite">正在加载工具列表…</p>
+          <button id="catalog-retry" class="retry-button" type="button" hidden>重新加载</button>
+        </section>
+      </main>
+    </div>
+  </body>
+</html>

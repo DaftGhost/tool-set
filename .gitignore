@@ -12,6 +12,7 @@ Thumbs.db
 
 # Common generated output and caches
 node_modules/
+.pnpm-store/
 dist/
 build/
 coverage/
@@ -34,5 +35,7 @@ target/
 # Logs and temporary files
 *.log
 .tmp/
+
+/site/
 
 docs/**

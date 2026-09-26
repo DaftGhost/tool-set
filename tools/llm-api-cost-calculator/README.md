@@ -48,21 +48,22 @@
 需要 Node.js 24.12 或更高的 24.x 版本。
 
 ~~~sh
-npm install
-npm run dev
+pnpm install
+pnpm run dev
 ~~~
 
 ## 构建与静态检查
 
 ~~~sh
-npm run typecheck
-npm run build
-npm run preview
+pnpm run typecheck
+pnpm run build
+pnpm run preview
 ~~~
 
 `build` 先进行 Vue/TypeScript 类型检查，再生成部署用静态文件到 `dist/`。
 
 ## 部署
 
-- GitHub Pages：https://daftghost.github.io/tool-set/
-- 推送到 `main` 时，GitHub Actions 会构建并发布本工具；也可以在 Actions 页面手动运行部署工作流。功能分支不触发生产发布。
+- GitHub Pages：https://daftghost.github.io/tool-set/tools/llm-api-cost-calculator/
+- 工具目录：https://daftghost.github.io/tool-set/
+- 推送到 `main` 时，GitHub Actions 会构建工具目录和所有已注册的浏览器工具并发布；也可以在 Actions 页面手动运行部署工作流。功能分支不触发生产发布。

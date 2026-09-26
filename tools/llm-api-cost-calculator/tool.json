@@ -1,0 +1,13 @@
+{
+  "schemaVersion": 1,
+  "kind": "browser",
+  "category": "API 费用估算",
+  "actionLabel": "开始测算",
+  "name": "LLM API 成本计算器",
+  "summary": "查看缓存与未缓存输入、输出成本拆分；调整用量参数，比较多种方案。",
+  "build": {
+    "install": ["pnpm", "install", "--frozen-lockfile"],
+    "command": ["pnpm", "run", "build"],
+    "outputDirectory": "dist"
+  }
+}
