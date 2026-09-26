@@ -5,6 +5,13 @@
   "actionLabel": "开始测算",
   "name": "LLM API 成本计算器",
   "summary": "查看缓存与未缓存输入、输出成本拆分；调整用量参数，比较多种方案。",
+  "dev": {
+    "command": ["pnpm", "run", "dev", "--host", "{host}", "--port", "{port}", "--strictPort", "--base", "{basePath}"],
+    "install": ["pnpm", "install"],
+    "environment": {"TOOL_HMR_CLIENT_PORT": "{rootPort}"},
+    "hmr": true,
+    "watch": ["src", "index.html", "vite.config.ts"]
+  },
   "build": {
     "install": ["pnpm", "install", "--frozen-lockfile"],
     "command": ["pnpm", "run", "build"],
