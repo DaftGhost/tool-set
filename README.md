@@ -74,6 +74,7 @@ tool-set/
 ## 工具说明
 
 - [LLM API 成本计算器](tools/llm-api-cost-calculator/README.md)：查看该工具的功能、依赖和独立开发命令。
+- [隐私替代资料生成器](tools/privacy-profile-generator/README.md)：按地区生成双语的合成资料，并在浏览器本地管理历史。
 
 ## 许可
 

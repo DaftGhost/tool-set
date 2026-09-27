@@ -1,0 +1,40 @@
+{
+  "name": "privacy-profile-generator",
+  "version": "0.1.0",
+  "private": true,
+  "packageManager": "pnpm@12.7.0",
+  "type": "module",
+  "engines": {
+    "node": ">=24.12.0 <25"
+  },
+  "scripts": {
+    "dev": "vite",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "typecheck": "tsc --noEmit -p tsconfig.json",
+    "build": "pnpm run typecheck && vite build",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "@faker-js/faker": "^10.6.0",
+    "koroman": "1.0.16",
+    "libphonenumber-js": "^1.12.0",
+    "pinyin-pro": "^3.27.0",
+    "react": "^19.3.0",
+    "react-dom": "^19.3.0",
+    "wanakana": "^5.3.1"
+  },
+  "devDependencies": {
+    "@testing-library/jest-dom": "^6.8.0",
+    "@testing-library/react": "^16.3.0",
+    "@testing-library/user-event": "^14.6.1",
+    "@types/react": "^19.3.0",
+    "@types/react-dom": "^19.3.0",
+    "@vitejs/plugin-react": "^6.1.1",
+    "fake-indexeddb": "^6.2.4",
+    "jsdom": "^26.1.0",
+    "typescript": "^7.0.2",
+    "vite": "^8.3.1",
+    "vitest": "^5.0.0"
+  }
+}

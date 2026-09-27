@@ -1,0 +1,20 @@
+{
+  "schemaVersion": 1,
+  "kind": "browser",
+  "category": "隐私保护",
+  "actionLabel": "生成资料",
+  "name": "隐私替代资料生成器",
+  "summary": "按地区生成可复制的合成资料，避免填写真实个人资料。",
+  "dev": {
+    "command": ["pnpm", "run", "dev", "--host", "{host}", "--port", "{port}", "--strictPort", "--base", "{basePath}"],
+    "install": ["pnpm", "install"],
+    "environment": {"TOOL_HMR_CLIENT_PORT": "{rootPort}"},
+    "hmr": true,
+    "watch": ["src", "index.html", "vite.config.ts"]
+  },
+  "build": {
+    "install": ["pnpm", "install", "--frozen-lockfile"],
+    "command": ["pnpm", "run", "build"],
+    "outputDirectory": "dist"
+  }
+}
