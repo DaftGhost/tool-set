@@ -97,7 +97,23 @@ corepack pnpm run deploy
 corepack pnpm run preview:workers
 ~~~
 
-GitHub Actions 只运行测试和构建，发布由本地 Wrangler 执行。迁移旧站点时，除移除 Pages 工作流，还需在仓库的 **Settings → Pages** 中取消发布，并将发布来源改为 **Deploy from a branch**、分支设为 **None** 后保存。确认页面显示 **GitHub Pages is currently disabled**，避免只删除工作流文件，却留下已发布的旧站点。
+### 推送后自动部署
+
+自动部署使用 Cloudflare 的仓库构建服务（Workers Builds）。在 `tool-set` Worker 的 **Settings → Builds → Connect** 中连接 GitHub 仓库 `DaftGhost/tool-set`，使用以下设置：
+
+| 设置 | 值 |
+| --- | --- |
+| 生产分支（Production branch） | `main` |
+| 根目录（Root directory） | 仓库根目录 |
+| 构建命令（Build command） | `pnpm run test && pnpm run build` |
+| 部署命令（Deploy command） | `pnpm exec wrangler deploy` |
+| 构建环境变量 | `NODE_VERSION=24.18.0`、`PNPM_VERSION=12.7.0` |
+
+连接后，每次推送到 `main` 都会触发测试、全量构建和部署；测试或构建失败时不会更新线上站点。其他分支的预览构建（Preview builds）保持关闭。GitHub Actions 继续验证测试和构建，生产发布由 Workers Builds 执行，本地 Wrangler 命令仍可用于手动发布。
+
+配置保存后，推送一次提交，并在 Cloudflare 构建记录中核对提交标识和部署结果，确认触发链路实际运行。自动部署配置参考 [Workers Builds 官方文档](https://developers.cloudflare.com/workers/ci-cd/builds/)。
+
+迁移旧站点时，除移除 Pages 工作流，还需在仓库的 **Settings → Pages** 中取消发布，并将发布来源改为 **Deploy from a branch**、分支设为 **None** 后保存。确认页面显示 **GitHub Pages is currently disabled**，避免只删除工作流文件，却留下已发布的旧站点。
 
 配置和锁文件可以提交到 Git；Cloudflare 登录凭据及 `.wrangler/` 本地状态不应提交。静态资源配置参考 [Cloudflare 官方文档](https://developers.cloudflare.com/workers/static-assets/)。
 
