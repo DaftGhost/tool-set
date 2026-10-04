@@ -122,6 +122,10 @@ corepack pnpm run preview:workers
 - [LLM API 成本计算器](tools/llm-api-cost-calculator/README.md)：查看该工具的功能、依赖和独立开发命令。
 - [隐私替代资料生成器](tools/privacy-profile-generator/README.md)：按地区生成双语的合成资料，并在浏览器本地管理历史。
 
+## 全局设计风格
+
+工具目录页与各工具页面的设计以[鼠尾草绿分析工作台规范](docs/frontend-design-style.md)为准，统一配色、字体、视觉层次与交互表达。
+
 ## 许可
 
 本项目采用 MIT License，完整条款见 [LICENSE](LICENSE)。

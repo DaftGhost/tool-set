@@ -40,3 +40,4 @@ target/
 /site/
 
 docs/**
+!docs/frontend-design-style.md
