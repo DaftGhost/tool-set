@@ -52,7 +52,8 @@ tool-set/
 │   ├── dev-site.mjs                  # 启动目录页并代理所有已登记工具
 │   └── *.test.mjs                    # 开发服务、构建器和目录页测试
 ├── docs/                             # 跨工具的产品与运维资料
-├── .github/workflows/                # 测试、全量构建和 Pages 部署流程
+├── .github/workflows/                # 测试和全量构建验证流程
+├── wrangler.json                    # Cloudflare Workers 静态资源部署配置
 ├── package.json                      # 根级依赖、命令和开发服务默认地址
 └── site/                             # pnpm build 生成的完整静态站点
 ~~~
@@ -70,6 +71,35 @@ tool-set/
 - `readinessPath` 可选，用于指定工具服务通过哪个 URL 路径报告就绪。
 
 例如，Vite 工具可以把 `pnpm run dev` 及其路径、端口参数写在 `dev.command` 中，并用 `environment` 将 `{rootPort}` 传给 Vite 的 HMR 客户端配置。根脚本不需要登记具体工具名称或其端口。
+
+## 部署到 Cloudflare Workers
+
+站点通过 Workers 的静态资源托管（Static Assets）发布整个 `site/` 目录，目录页位于 `/`，各工具位于 `/tools/<工具目录名>/`。目录地址会自动补齐末尾斜杠；不存在的路径返回 404。
+
+首次部署时，用 Wrangler 登录 Cloudflare 账号：
+
+~~~sh
+corepack pnpm exec wrangler login
+corepack pnpm exec wrangler whoami
+~~~
+
+构建目录页和全部已登记工具后发布：
+
+~~~sh
+corepack pnpm run deploy
+~~~
+
+`deploy` 会先执行全量构建；构建失败时不会上传。Workers 名称为 `tool-set`，部署成功后 Wrangler 会输出该账号下的 `workers.dev` 地址。需要自定义域名时，在 Cloudflare 的 Workers 设置中为该 Worker 添加域名。
+
+本地验证 Workers 的静态资源路由：
+
+~~~sh
+corepack pnpm run preview:workers
+~~~
+
+GitHub Actions 只运行测试和构建，发布由本地 Wrangler 执行。迁移旧站点时，除移除 Pages 工作流，还需在仓库的 **Settings → Pages** 中取消发布，并将发布来源改为 **Deploy from a branch**、分支设为 **None** 后保存。确认页面显示 **GitHub Pages is currently disabled**，避免只删除工作流文件，却留下已发布的旧站点。
+
+配置和锁文件可以提交到 Git；Cloudflare 登录凭据及 `.wrangler/` 本地状态不应提交。静态资源配置参考 [Cloudflare 官方文档](https://developers.cloudflare.com/workers/static-assets/)。
 
 ## 工具说明
 

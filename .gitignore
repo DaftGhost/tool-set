@@ -18,6 +18,7 @@ build/
 coverage/
 .next/
 .cache/
+.wrangler/
 
 # Python
 __pycache__/

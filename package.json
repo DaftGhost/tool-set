@@ -9,7 +9,9 @@
     "typecheck:catalog": "tsc --noEmit -p catalog/tsconfig.json",
     "build:catalog": "pnpm run typecheck:catalog && vite build --config catalog/vite.config.ts",
     "build": "pnpm run build:catalog && node scripts/build-site.mjs",
-    "serve": "node scripts/serve-site.mjs"
+    "serve": "node scripts/serve-site.mjs",
+    "preview:workers": "pnpm run build && wrangler dev",
+    "deploy": "pnpm run build && wrangler deploy"
   },
   "toolSet": {
     "devServer": {
@@ -27,6 +29,7 @@
     "@types/react-dom": "^19.3.0",
     "@vitejs/plugin-react": "^6.1.1",
     "typescript": "^7.0.2",
-    "vite": "^8.3.1"
+    "vite": "^8.3.1",
+    "wrangler": "4.144.0"
   }
 }

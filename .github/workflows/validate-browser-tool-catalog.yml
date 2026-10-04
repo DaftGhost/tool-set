@@ -1,25 +1,21 @@
-name: Deploy Browser Tool Catalog to GitHub Pages
+name: Validate Browser Tool Catalog
 
 on:
   push:
     branches:
       - main
   workflow_dispatch:
+  pull_request:
 
 permissions:
   contents: read
-  pages: write
-  id-token: write
 
 concurrency:
-  group: github-pages
+  group: validate-browser-tool-catalog-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
-  deploy:
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
+  validate:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -39,15 +35,3 @@ jobs:
 
       - name: Build catalog and all browser tools
         run: pnpm run build
-
-      - name: Configure GitHub Pages
-        uses: actions/configure-pages@v6
-
-      - name: Upload Pages artifact
-        uses: actions/upload-pages-artifact@v5
-        with:
-          path: site
-
-      - name: Deploy to GitHub Pages
-        id: deployment
-        uses: actions/deploy-pages@v5
