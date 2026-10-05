@@ -128,7 +128,7 @@ corepack pnpm run preview:workers --local --persist-to .wrangler/state
 
 - [LLM API 成本计算器](tools/llm-api-cost-calculator/README.md)：查看该工具的功能、依赖和独立开发命令。
 - [隐私替代资料生成器](tools/privacy-profile-generator/README.md)：按地区生成双语的合成资料，并在浏览器本地管理历史。
-- [随机人设生成器](tools/random-persona-generator/README.md)：通过 Worker 与 D1 从 NVIDIA 数据集抽取人物，集中展示姓名、正文使用人称代词（personal pronouns），支持英文结构化档案复制和最近 20 份浏览器本地历史。
+- [随机人设生成器](tools/random-persona-generator/README.md)：通过 Worker 与 D1 从 NVIDIA 的 `nvidia/Nemotron-Personas-USA` 数据集抽取人物，集中展示姓名、正文使用人称代词（personal pronouns），支持英文结构化档案复制和最近 20 份浏览器本地历史。
 
 ## 全局设计风格
 
