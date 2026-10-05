@@ -21,15 +21,13 @@ test('the deployment command builds before uploading assets through Wrangler', a
   assert.ok(manifest.devDependencies.wrangler)
 })
 
-test('GitHub workflows validate the site without publishing to Pages', async () => {
+test('the repository has no GitHub workflows because Workers Builds owns validation and deployment', async () => {
   const directory = new URL('.github/workflows/', repositoryRoot)
-  const files = await readdir(directory)
-  assert.ok(files.length > 0)
-
-  for (const file of files) {
-    const workflow = await readFile(new URL(file, directory), 'utf8')
-    assert.doesNotMatch(workflow, /github-pages|actions\/(?:configure-pages|upload-pages-artifact|deploy-pages)@|pages: write/)
-  }
+  const files = await readdir(directory).catch((error) => {
+    if (error.code === 'ENOENT') return []
+    throw error
+  })
+  assert.deepEqual(files, [])
 })
 
 test('the persona API runs before assets and unrelated routes retain their asset response', async () => {

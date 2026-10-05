@@ -56,7 +56,6 @@ corepack pnpm run test
 | `scripts/dev-site.mjs` | 启动目录页并代理所有已登记工具 |
 | `scripts/*.test.mjs` | 开发服务、构建器和目录页测试 |
 | `docs/` | 跨工具的产品与运维资料；多数文件按仓库规则仅保存在本地 |
-| `.github/workflows/` | 测试和全量构建验证流程 |
 | `wrangler.json` | Worker 入口、静态资源、D1 绑定与源数据版本配置 |
 | `package.json` | 根级依赖、命令和开发服务默认地址 |
 | `site/` | `pnpm run build` 生成的完整静态站点 |
@@ -116,7 +115,7 @@ corepack pnpm run preview:workers --local --persist-to .wrangler/state
 | 部署命令（Deploy command） | `pnpm exec wrangler deploy` |
 | 构建环境变量 | `NODE_VERSION=24.18.0`、`PNPM_VERSION=12.7.0` |
 
-连接后，每次推送到 `main` 都会触发测试、全量构建和部署；测试或构建失败时不会更新线上站点。其他分支的预览构建（Preview builds）保持关闭。GitHub Actions 继续验证测试和构建，生产发布由 Workers Builds 执行，本地 Wrangler 命令仍可用于手动发布。
+连接后，每次推送到 `main` 都会触发测试、全量构建和部署；测试或构建失败时不会更新线上站点。其他分支的预览构建（Preview builds）保持关闭。测试、构建和生产发布均由 Workers Builds 执行，仓库不保留 GitHub Actions 工作流，本地 Wrangler 命令仍可用于手动发布。
 
 配置保存后，推送一次提交，并在 Cloudflare 构建记录中核对提交标识和部署结果，确认触发链路实际运行。自动部署配置参考 [Workers Builds 官方文档](https://developers.cloudflare.com/workers/ci-cd/builds/)。
 
