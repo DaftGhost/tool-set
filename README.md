@@ -10,8 +10,14 @@
 corepack pnpm install --frozen-lockfile
 cd tools/llm-api-cost-calculator
 corepack pnpm install --frozen-lockfile
+cd ../privacy-profile-generator
+corepack pnpm install --frozen-lockfile
+cd ../random-persona-generator
+corepack pnpm install --frozen-lockfile
 cd ../..
 ~~~
+
+随机人设工具还需首次下载、准备并导入本地 D1 数据，具体命令见[本地启动说明](tools/random-persona-generator/README.md#本地启动)。数据准备不由根开发服务或普通构建自动执行；未导入时页面可以打开，抽取接口返回 503。
 
 在仓库根目录启动目录页和所有在 `tools/*/tool.json` 登记的浏览器工具：
 
@@ -28,7 +34,7 @@ corepack pnpm run build
 corepack pnpm run serve
 ~~~
 
-静态站点访问地址为 <http://localhost:9527/>；`site/` 是构建生成的目录。
+静态站点访问地址为 <http://localhost:9527/>；`site/` 是构建生成的目录。`serve` 只提供静态页面，随机人设的抽取接口需要 Worker；验证完整功能时使用下方的[本地 Worker 预览](#部署到-cloudflare-workers)，或运行开发服务。
 
 运行根目录测试：
 
@@ -36,27 +42,24 @@ corepack pnpm run serve
 corepack pnpm run test
 ~~~
 
-计算器的功能、配置和其他命令见[工具 README](tools/llm-api-cost-calculator/README.md)。
+各工具的功能、配置和独立运行命令见[工具说明](#工具说明)。
 
 ## 项目结构
 
-~~~text
-tool-set/
-├── catalog/                         # React、TypeScript 和 Vite 工具目录页
-├── tools/
-│   └── <browser-tool>/               # 每个工具独立管理源码、依赖和配置
-│       ├── README.md                 # 该工具的功能、技术栈和运行说明
-│       └── tool.json                 # 目录元数据及该工具的开发、构建命令
-├── scripts/
-│   ├── build-site.mjs                # 扫描 tool.json，构建并组装完整站点
-│   ├── dev-site.mjs                  # 启动目录页并代理所有已登记工具
-│   └── *.test.mjs                    # 开发服务、构建器和目录页测试
-├── docs/                             # 跨工具的产品与运维资料
-├── .github/workflows/                # 测试和全量构建验证流程
-├── wrangler.json                    # Cloudflare Workers 静态资源部署配置
-├── package.json                      # 根级依赖、命令和开发服务默认地址
-└── site/                             # pnpm build 生成的完整静态站点
-~~~
+| 路径 | 职责 |
+| --- | --- |
+| `catalog/` | React、TypeScript 和 Vite 工具目录页 |
+| `tools/<browser-tool>/` | 每个工具独立管理源码、依赖和配置；`README.md` 说明运行方式，`tool.json` 声明目录元数据及开发、构建命令 |
+| `tools/random-persona-generator/` | 人设前端、只读接口、D1 迁移及本地数据准备和导入脚本 |
+| `worker/` | 站点 Worker 入口与绑定类型，连接人设接口和静态资源 |
+| `scripts/build-site.mjs` | 扫描 `tool.json`，构建并组装完整站点 |
+| `scripts/dev-site.mjs` | 启动目录页并代理所有已登记工具 |
+| `scripts/*.test.mjs` | 开发服务、构建器和目录页测试 |
+| `docs/` | 跨工具的产品与运维资料；多数文件按仓库规则仅保存在本地 |
+| `.github/workflows/` | 测试和全量构建验证流程 |
+| `wrangler.json` | Worker 入口、静态资源、D1 绑定与源数据版本配置 |
+| `package.json` | 根级依赖、命令和开发服务默认地址 |
+| `site/` | `pnpm run build` 生成的完整静态站点 |
 
 根目录开发服务和构建器都会读取每个浏览器工具的 `tool.json`。开发服务按元数据启动各工具的开发命令，并通过一个本地地址代理工具路径；生产构建分别执行构建命令，将工具输出放到 `site/tools/<tool-name>/`，并生成目录页使用的工具清单。新增工具时，在自己的目录维护元数据和 README；目录页会在开发启动或下一次构建时自动收录。
 
@@ -91,13 +94,15 @@ corepack pnpm run deploy
 
 `deploy` 会先执行全量构建；构建失败时不会上传。Workers 名称为 `tool-set`，部署成功后 Wrangler 会输出该账号下的 `workers.dev` 地址。需要自定义域名时，在 Cloudflare 的 Workers 设置中为该 Worker 添加域名。
 
-随机人设后端还需要 `PERSONAS_DB` D1 绑定和已导入的 NVIDIA 数据。发布前完成该工具 [README](tools/random-persona-generator/README.md) 中的账号、容量和数据核验条件；普通构建及部署命令不会上传人设数据。当前功能已在本地实现，尚未发布。
+随机人设后端还需要 `PERSONAS_DB` D1 绑定和已导入的 NVIDIA 数据。发布前完成该工具 [README](tools/random-persona-generator/README.md#后续部署) 中的账号、容量和数据核验条件；普通构建及部署命令不会上传人设数据。源码已推送至 `codex/random-persona-generator` 分支，本地验收已完成，尚未部署；根配置的 D1 ID 仍是本地占位符。
 
-本地验证 Workers 的静态资源路由：
+完成本地数据导入后，验证 Worker 的静态资源路由和人设抽取接口：
 
 ~~~sh
-corepack pnpm run preview:workers
+corepack pnpm run preview:workers --local --persist-to .wrangler/state
 ~~~
+
+按 Wrangler 输出的本地地址打开目录页和 `/tools/random-persona-generator/`。这条命令先构建，再启动本地 Worker，复用数据导入时的 D1 状态，不执行远程部署。
 
 ### 推送后自动部署
 
@@ -123,7 +128,7 @@ corepack pnpm run preview:workers
 
 - [LLM API 成本计算器](tools/llm-api-cost-calculator/README.md)：查看该工具的功能、依赖和独立开发命令。
 - [隐私替代资料生成器](tools/privacy-profile-generator/README.md)：按地区生成双语的合成资料，并在浏览器本地管理历史。
-- [随机人设生成器](tools/random-persona-generator/README.md)：通过 Worker 随机抽取人物档案，分区展示字段并复制英文结构化人物档案。
+- [随机人设生成器](tools/random-persona-generator/README.md)：通过 Worker 与 D1 从 NVIDIA 数据集抽取人物，集中展示姓名、正文使用人称代词（personal pronouns），支持英文结构化档案复制和最近 20 份浏览器本地历史。
 
 ## 全局设计风格
 
@@ -132,6 +137,8 @@ corepack pnpm run preview:workers
 ## 许可
 
 本项目采用 MIT License，完整条款见 [LICENSE](LICENSE)。
+
+随机人设使用的 NVIDIA 数据集采用 CC BY 4.0；展示和复制保留数据来源、许可及加工说明。数据集许可独立于本项目代码许可，详见[工具说明](tools/random-persona-generator/README.md)。
 
 ## AI 生成内容声明
 

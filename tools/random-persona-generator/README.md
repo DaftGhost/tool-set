@@ -4,6 +4,8 @@
 
 前端使用 React、TypeScript 和 Vite，后端使用 Cloudflare Worker 与 D1。运行时只读（read-only）数据库，复制在浏览器内完成；首次导入与新版本准备是独立的写入流程。没有语言切换、翻译服务或后端访问历史写入；抽取历史只保存在当前浏览器。
 
+实现已在[功能提交 94bb68b](https://github.com/DaftGhost/tool-set/commit/94bb68b2cc61f8541061981417ea1d1110d24fab)中推送至 `codex/random-persona-generator` 分支，已完成本地数据与浏览器验收。尚未部署，远程 D1 数据库和数据导入仍需单独准备。
+
 ## 本地启动
 
 使用 Node.js 24.x、Corepack 和 pnpm 12.7.0。在本目录运行：
@@ -22,6 +24,8 @@ corepack pnpm run dev
 
 本地模拟（local emulation）不需要 Cloudflare 登录或付费套餐。数据目录为 `.local-data/<revision>/`，本地 D1 位于仓库根 `.wrangler/state/v3/`，开发服务和导入共用该状态。下载数据、数据库、校验报告、日志和构建输出均被忽略，不进入前端包或 Git。
 
+本地数据准备完成后，从仓库根目录运行 `corepack pnpm run preview:workers --local --persist-to .wrangler/state`，可验证完整构建与本地接口；访问地址以 Wrangler 输出为准。根目录 `corepack pnpm run serve` 只提供静态页面，不能单独验证人设抽取。
+
 ## 数据准备与保真
 
 `data:prepare` 校验全部源文件、字段集合及百万条记录，按 Parquet 行组读取。保留全部 23 个源字段、原始空字符串和换行；邮编保持字符串，年龄保持整数，不补写姓名或推测年龄。两个源列表的原始编码保留，另外保存规范数组。
@@ -38,7 +42,7 @@ SQL 导出保留字符串的 UTF-8 字节，单语句不超过 100,000 字节，
 
 未就绪、版本不匹配、字段或摘要错误、读取失败返回 503；不支持的方法返回 405；未知接口返回 404。前端直接渲染字段，不反解析标题或执行 HTML。请求失败保留上次人物。预览与复制共用 `formatCharacterSheet(snapshot)`，复制确认后才显示成功；剪贴板不可用时展开并选中英文档案文本供手动复制。
 
-源数据没有独立姓名字段。前端从叙述开头取得候选姓名，至少在两个不同叙述字段中出现才采用；单词姓名需三个字段支持，已确认的完整姓名优先于简称，同等支持的不同姓名视为无法确认。姓名集中放在概况顶部和导出的 `Name` 一行；正文中的完整姓名及可识别的简称改用 He、She 或 They。代词依据英文叙述：只有一组代词获得至少两个字段支持时采用该组，冲突或未明确时使用 They，不按 `sex` 推断。处理常见主格、宾格、所有格，以及 They 的直接谓语和简单同位语后的动词变化；保留其他源内容。姓名与代词识别均为有限文本规则，不保证理解全部语法或每个代词的指代。无法确认姓名时显示 `Name not identified`、导出 `Name: Not identified`，并保留源正文。处理只在前端执行，源字段与数据库保持不变，导出注明加工。
+源数据没有独立姓名字段。前端从叙述开头取得候选姓名，至少在两个不同叙述字段中出现才采用；单词姓名需三个字段支持，已确认的完整姓名优先于简称，同等支持的不同姓名视为无法确认。姓名集中放在概况顶部和导出的 `Name` 一行；正文中的完整姓名及可识别的简称改用人称代词（personal pronouns）He、She 或 They，不生成 `This character` 称谓。代词依据英文叙述：只有一组代词获得至少两个字段支持时采用该组，冲突或未明确时使用 They，不按 `sex` 推断。处理常见主格、宾格、所有格，以及 They 的直接谓语、简单同位语和 `also` 后的动词变化；保留其他源内容。姓名与代词识别均为有限文本规则，不保证理解全部语法或每个代词的指代。无法确认姓名时显示 `Name not identified`、导出 `Name: Not identified`，并保留源正文。处理只在前端执行，源字段与数据库保持不变，导出注明加工。
 
 ## 浏览器本地历史
 
@@ -54,9 +58,11 @@ corepack pnpm run typecheck
 corepack pnpm run build
 ```
 
-测试覆盖字段验证、英文格式化、源列表解析、等概率抽样、SQLite 与 SQL 往返、失败续跑、未就绪状态、异步交互及复制。真实 workerd／D1 测试验证本地导入与只读接口。构建输出为 `dist/`；根目录的测试和构建验证目录接入及全部工具。
+测试覆盖字段验证、姓名与代词处理、英文格式化、源列表解析、等概率抽样、SQLite 与 SQL 往返、失败续跑、未就绪状态、异步交互、复制及本地历史。真实 workerd／D1 测试验证本地导入与只读接口。构建输出为 `dist/`；根目录的测试和构建验证目录接入及全部工具。
 
 修改 Wrangler 绑定后运行 `corepack pnpm run types:generate`，从根配置重新生成 Worker 类型。配置保持当前兼容日期，不隐式升级 Wrangler。
+
+2026-10-05 本地验收结果：根目录 24 项测试、工具 33 项测试、类型检查和全量构建通过；百万条源记录与本地 D1 完整回读核对通过。桌面和手机验证了抽取、刷新恢复、历史选择及复制；实际复制全文与预览逐字一致，手机没有横向溢出。历史选择未发出网络请求。这些结果不代表远程部署或线上性能已经验证。
 
 ## 后续部署
 
@@ -64,4 +70,4 @@ corepack pnpm run build
 
 保留上一个已验证版本的数据与 Worker 配置。Worker 回退不会恢复数据库；回退时同时核对绑定、源版本和就绪状态。本工具只提供本地导入命令，远程操作需在部署阶段另行执行并验收。
 
-来源：[固定版本数据集](https://huggingface.co/datasets/nvidia/Nemotron-Personas-USA/tree/5b4cd35ab46490c1da1bd2b5a2324d6f871be180)、[CC BY 4.0](https://creativecommons.org/licenses/by/4.0/)。设计与本地验收见 [实施计划](../../docs/random-persona-generator-plan.md) 和[核实记录](../../docs/random-persona-generator-usa-research.md)，这些本地文档不是工具运行依赖。
+来源：[固定版本数据集](https://huggingface.co/datasets/nvidia/Nemotron-Personas-USA/tree/5b4cd35ab46490c1da1bd2b5a2324d6f871be180)、[CC BY 4.0](https://creativecommons.org/licenses/by/4.0/)。设计与验收材料位于本地 `docs/random-persona-generator-plan.md`、`docs/random-persona-generator-usa-research.md`，以及同目录的截图和复制全文；这些文件按仓库规则未提交到 Git，克隆仓库不会包含它们，也不影响工具运行。
