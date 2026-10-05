@@ -1,0 +1,40 @@
+CREATE TABLE IF NOT EXISTS personas (
+  sample_id INTEGER PRIMARY KEY CHECK(sample_id >= 0),
+  uuid TEXT NOT NULL,
+  professional_persona TEXT NOT NULL,
+  sports_persona TEXT NOT NULL,
+  arts_persona TEXT NOT NULL,
+  travel_persona TEXT NOT NULL,
+  culinary_persona TEXT NOT NULL,
+  persona TEXT NOT NULL,
+  cultural_background TEXT NOT NULL,
+  skills_and_expertise TEXT NOT NULL,
+  skills_and_expertise_list TEXT NOT NULL,
+  hobbies_and_interests TEXT NOT NULL,
+  hobbies_and_interests_list TEXT NOT NULL,
+  career_goals_and_ambitions TEXT NOT NULL,
+  sex TEXT NOT NULL,
+  age INTEGER NOT NULL,
+  marital_status TEXT NOT NULL,
+  education_level TEXT NOT NULL,
+  bachelors_field TEXT NOT NULL,
+  occupation TEXT NOT NULL,
+  city TEXT NOT NULL,
+  state TEXT NOT NULL,
+  zipcode TEXT NOT NULL,
+  country TEXT NOT NULL,
+  source_hash TEXT NOT NULL,
+  skills_json TEXT NOT NULL,
+  hobbies_json TEXT NOT NULL
+) STRICT;
+CREATE UNIQUE INDEX IF NOT EXISTS personas_uuid ON personas(uuid);
+CREATE TABLE IF NOT EXISTS dataset_metadata (
+  id INTEGER PRIMARY KEY CHECK(id = 1),
+  dataset_version TEXT NOT NULL,
+  dataset_name TEXT NOT NULL,
+  split TEXT NOT NULL,
+  row_count INTEGER NOT NULL,
+  status TEXT NOT NULL CHECK(status IN ('preparing', 'ready')),
+  files_json TEXT NOT NULL,
+  fields_sha256 TEXT NOT NULL
+) STRICT;

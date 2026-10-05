@@ -91,6 +91,8 @@ corepack pnpm run deploy
 
 `deploy` 会先执行全量构建；构建失败时不会上传。Workers 名称为 `tool-set`，部署成功后 Wrangler 会输出该账号下的 `workers.dev` 地址。需要自定义域名时，在 Cloudflare 的 Workers 设置中为该 Worker 添加域名。
 
+随机人设后端还需要 `PERSONAS_DB` D1 绑定和已导入的 NVIDIA 数据。发布前完成该工具 [README](tools/random-persona-generator/README.md) 中的账号、容量和数据核验条件；普通构建及部署命令不会上传人设数据。当前功能已在本地实现，尚未发布。
+
 本地验证 Workers 的静态资源路由：
 
 ~~~sh
@@ -121,6 +123,7 @@ corepack pnpm run preview:workers
 
 - [LLM API 成本计算器](tools/llm-api-cost-calculator/README.md)：查看该工具的功能、依赖和独立开发命令。
 - [隐私替代资料生成器](tools/privacy-profile-generator/README.md)：按地区生成双语的合成资料，并在浏览器本地管理历史。
+- [随机人设生成器](tools/random-persona-generator/README.md)：通过 Worker 随机抽取人物档案，分区展示字段并复制英文结构化人物档案。
 
 ## 全局设计风格
 

@@ -1,0 +1,20 @@
+{
+  "schemaVersion": 1,
+  "kind": "browser",
+  "category": "创作辅助",
+  "actionLabel": "抽取人设",
+  "name": "随机人设生成器",
+  "summary": "随机抽取完整人物档案，分区阅读性格、职业和兴趣，复制英文结构化人物档案。",
+  "dev": {
+    "command": ["pnpm", "run", "dev", "--host", "{host}", "--port", "{port}", "--strictPort", "--base", "{basePath}"],
+    "install": ["pnpm", "install", "--frozen-lockfile"],
+    "environment": { "TOOL_HMR_CLIENT_PORT": "{rootPort}" },
+    "hmr": true,
+    "watch": ["src", "index.html", "vite.config.ts"]
+  },
+  "build": {
+    "install": ["pnpm", "install", "--frozen-lockfile"],
+    "command": ["pnpm", "run", "build"],
+    "outputDirectory": "dist"
+  }
+}
