@@ -21,9 +21,12 @@ test('the deployment command builds before uploading assets through Wrangler', a
   assert.ok(manifest.devDependencies.wrangler)
 })
 
-test('the default deployment excludes local-only D1 identifiers', async () => {
+test('the default deployment binds a real persona D1 and excludes local-only identifiers', async () => {
   const config = JSON.parse(await readFile(new URL('wrangler.json', repositoryRoot), 'utf8'))
+  assert.equal(config.d1_databases.length, 1)
+  assert.equal(config.d1_databases[0].binding, 'PERSONAS_DB')
   for (const database of config.d1_databases ?? []) {
+    assert.match(database.database_id, /^[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}$/)
     assert.notEqual(database.database_id, '00000000-0000-0000-0000-000000000001')
   }
 })

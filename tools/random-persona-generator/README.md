@@ -64,12 +64,20 @@ corepack pnpm run build
 
 2026-10-05 本地验收结果：根目录 24 项测试、工具 33 项测试、类型检查和全量构建通过；百万条源记录与本地 D1 完整回读核对通过。桌面和手机验证了抽取、刷新恢复、历史选择及复制；实际复制全文与预览逐字一致，手机没有横向溢出。历史选择未发出网络请求。这些结果不代表远程部署或线上性能已经验证。
 
-## 后续部署
+## 线上部署与数据范围
 
-网站默认发布不绑定 D1；数据库未配置时，随机人设接口明确返回 503，不阻断网站和其他工具发布。根配置的 `env.local` 与本工具的 `wrangler.local.json` 保留本地占位 `database_id`，只能用于本地模拟，不能发布该环境。根目录 `preview:workers` 自动选择 `--env local --local`，独立开发与导入命令继续使用本工具的本地配置。
+线上配置使用真实 D1 `tool-set-personas-usa-5b4cd35a-40k`，保存固定源版本中的 40,000 条记录。用户选择使用部分数据以保留 Workers Free；这不是百万条完整数据集。每份人设的全部 23 个源字段与规范数组均保留，运行时在这 40,000 条记录中等概率抽取。源版本及许可见下方链接。
 
-人设功能的远程准备仍待后续，普通构建不上传人设数据。上线前需核对账号、套餐与权限，创建单独版本数据库，导入兼容 SQL，完成远程全量回读后才在根 `wrangler.json` 顶层添加真实的 `PERSONAS_DB` D1 绑定，并核对 `PERSONA_DATASET_VERSION`。不要将本地占位 ID 复制到顶层，也不要只删除 ID 后保留绑定，以免触发自动资源创建。全量数据不能装入免费的 500 MB 单库；实际远程存储、CPU、性能和费用须在目标账号验证。
+抽样按 `SHA-256(seed:uuid)` 升序取前 40,000 条，再按原 `sample_id` 顺序重新编号为 0–39,999。seed 为固定源版本加 `:deployment-subset-v1`，结果可复现。已完成全量本地准备后，运行：
 
-保留上一个已验证版本的数据与 Worker 配置。Worker 回退不会恢复数据库；回退时同时核对绑定、源版本和就绪状态。本工具只提供本地导入命令，远程操作需在部署阶段另行执行并验收。
+```sh
+corepack pnpm run data:prepare-subset
+```
+
+输出保存于 `.local-data/<version>-40k/`，包含 SQLite、字段核对报告、源行映射 `selection.json`、SQL 包及校验和。实测 SQLite 含索引为 262,995,968 字节。普通构建不上传数据；远程数据库须独立导入、全量回读核对，再将状态改为 ready。导入时保存独立的远程检查点，不能复用本地导入检查点。免费套餐单库上限 500 MB，每日包含 100,000 行写入；表和唯一索引都计入写入，重复导入前应核对当天剩余额度。[D1 限制](https://developers.cloudflare.com/d1/platform/limits/)、[计量说明](https://developers.cloudflare.com/d1/platform/pricing/)
+
+根 `wrangler.json` 顶层的真实 `PERSONAS_DB` 绑定用于线上 Worker；`env.local` 和本工具 `wrangler.local.json` 的占位 ID 仅用于本地模拟。根 `preview:workers` 固定选择 `--env local --local`，本地仍可使用原百万条数据库。修改线上绑定后重新生成类型、检查并推送 `main`，由 Workers Builds 发布。回退 Worker 不会恢复 D1；回退前同时核对绑定、源版本和数据就绪状态。
+
+2026-10-05 远程完整回读已通过：40,000 条的全部原字段、摘要及规范数组均与已验证抽样库一致，字段集合摘要为 `21c77628607f4c597fb9c72ae29fc5fc956a63b470a2b1071d0a6317e1241cd7`，数据已设为 ready。远程库含平台保留结构为 263,319,552 字节。已通过根测试 27 项、工具测试 36 项、类型检查、完整构建及真实绑定的打包预演。公开页面的验收结果记入本地部署文档。
 
 来源：[固定版本数据集](https://huggingface.co/datasets/nvidia/Nemotron-Personas-USA/tree/5b4cd35ab46490c1da1bd2b5a2324d6f871be180)、[CC BY 4.0](https://creativecommons.org/licenses/by/4.0/)。计划与核实文档位于本地 `docs/random-persona-generator-plan.md`、`docs/random-persona-generator-usa-research.md`；一次性核查笔记本、验收截图和实际复制全文位于仓库根目录的 `.test-result/random-persona-generator/`。这些本地文件按仓库规则未提交到 Git，克隆仓库不会包含它们，也不影响工具运行。

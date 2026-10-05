@@ -4,6 +4,14 @@
   "main": "worker/index.ts",
   "compatibility_date": "2026-10-03",
   "workers_dev": true,
+  "d1_databases": [
+    {
+      "binding": "PERSONAS_DB",
+      "database_name": "tool-set-personas-usa-5b4cd35a-40k",
+      "database_id": "1b11afcb-42e0-46aa-9d24-56a961d906d2",
+      "migrations_dir": "tools/random-persona-generator/migrations"
+    }
+  ],
   "assets": {
     "binding": "ASSETS",
     "run_worker_first": [

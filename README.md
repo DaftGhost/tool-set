@@ -57,7 +57,7 @@ corepack pnpm run test
 | `scripts/*.test.mjs` | 开发服务、构建器和目录页测试 |
 | `docs/` | 跨工具的产品与运维资料；多数文件按仓库规则仅保存在本地 |
 | `.test-result/` | 一次性测试文件、临时测试脚本及验收输出，仅保存在本地 |
-| `wrangler.json` | Worker 入口、静态资源、源数据版本，以及独立的本地 D1 环境配置 |
+| `wrangler.json` | Worker 入口、静态资源、源数据版本、真实线上 D1 及独立的本地环境配置 |
 | `package.json` | 根级依赖、命令和开发服务默认地址 |
 | `site/` | `pnpm run build` 生成的完整静态站点 |
 
@@ -94,7 +94,7 @@ corepack pnpm run deploy
 
 `deploy` 会先执行全量构建；构建失败时不会上传。Workers 名称为 `tool-set`，部署成功后 Wrangler 会输出该账号下的 `workers.dev` 地址。需要自定义域名时，在 Cloudflare 的 Workers 设置中为该 Worker 添加域名。
 
-默认发布配置没有 `PERSONAS_DB` D1 绑定，网站可以独立发布；线上随机人设接口在数据库未配置时返回 503。人设功能上线前需完成该工具 [README](tools/random-persona-generator/README.md#后续部署) 中的账号、容量和数据核验条件，再添加真实的 D1 绑定。普通构建及部署命令不会上传人设数据。本地占位 ID 只在 `env.local` 和工具的本地配置中使用，不进入默认发布。
+默认发布配置绑定真实的 `PERSONAS_DB` D1，线上人设库使用固定 NVIDIA 源版本中的 40,000 条完整人物记录，保留免费套餐。抽样方法和数据操作见[工具部署说明](tools/random-persona-generator/README.md#线上部署与数据范围)。普通构建及部署命令不会上传数据；数据库未配置或未就绪时接口返回 503。本地占位 ID 只在 `env.local` 和工具的本地配置中使用，不进入默认发布。
 
 完成本地数据导入后，验证 Worker 的静态资源路由和人设抽取接口：
 

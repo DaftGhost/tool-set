@@ -13,6 +13,7 @@
     "typecheck": "tsc --noEmit",
     "build": "pnpm run typecheck && vite build",
     "data:prepare": "node --experimental-strip-types scripts/prepareDataset.ts",
+    "data:prepare-subset": "node --experimental-strip-types scripts/prepareSubset.ts",
     "data:import-local": "node --experimental-strip-types scripts/importLocal.ts",
     "data:download": "node --experimental-strip-types scripts/downloadDataset.ts",
     "types:generate": "wrangler types ../../worker/worker-configuration.d.ts --config ../../wrangler.json"
