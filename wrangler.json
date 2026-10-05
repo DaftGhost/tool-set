@@ -13,16 +13,23 @@
     "html_handling": "auto-trailing-slash",
     "not_found_handling": "none"
   },
-  "d1_databases": [
-    {
-      "binding": "PERSONAS_DB",
-      "database_name": "tool-set-personas-usa",
-      "database_id": "00000000-0000-0000-0000-000000000001",
-      "migrations_dir": "tools/random-persona-generator/migrations"
-    }
-  ],
   "vars": {
     "PERSONA_DATASET_VERSION": "5b4cd35ab46490c1da1bd2b5a2324d6f871be180"
+  },
+  "env": {
+    "local": {
+      "d1_databases": [
+        {
+          "binding": "PERSONAS_DB",
+          "database_name": "tool-set-personas-usa",
+          "database_id": "00000000-0000-0000-0000-000000000001",
+          "migrations_dir": "tools/random-persona-generator/migrations"
+        }
+      ],
+      "vars": {
+        "PERSONA_DATASET_VERSION": "5b4cd35ab46490c1da1bd2b5a2324d6f871be180"
+      }
+    }
   },
   "observability": {
     "enabled": true,

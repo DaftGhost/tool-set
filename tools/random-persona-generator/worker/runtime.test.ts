@@ -20,7 +20,7 @@ describe('real Worker and D1 runtime', () => {
     const harness = createTestHarness({ workers: [{ configPath: 'wrangler.local.json' }] })
     try {
       await harness.listen()
-      const worker = harness.getWorker<Pick<Env, 'PERSONAS_DB'>>()
+      const worker = harness.getWorker<Pick<Cloudflare.LocalEnv, 'PERSONAS_DB'>>()
       expect((await worker.fetch(apiPath)).status).toBe(503)
       const { PERSONAS_DB } = await worker.getEnv()
       const prepared = await prepareDatabase({ rows: sourceRows(), output: directory, expectedRows: 2, files: [{ name: 'fixture.parquet', bytes: 1, sha256: 'a'.repeat(64), rows: 2 }] })

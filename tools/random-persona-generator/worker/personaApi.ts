@@ -6,7 +6,7 @@ export interface PersonaStatement {
   first(): Promise<unknown>
 }
 export interface PersonaDatabase { prepare(query: string): PersonaStatement }
-export interface PersonaStorage { database: PersonaDatabase; datasetVersion: string }
+export interface PersonaStorage { database?: PersonaDatabase; datasetVersion: string }
 
 function drawUint32() { return crypto.getRandomValues(new Uint32Array(1))[0] }
 export function randomRow(count: number, draw: () => number = drawUint32): number {
@@ -27,6 +27,7 @@ export async function handlePersonaRequest(request: Request, storage: PersonaSto
   if (pathname !== apiPath) return jsonResponse({ error: 'NOT_FOUND' }, 404)
   if (request.method !== 'GET') return jsonResponse({ error: 'METHOD_NOT_ALLOWED' }, 405, { allow: 'GET' })
   try {
+    if (!storage.database) throw new Error('Persona database is not configured')
     const metadata = objectValue(await storage.database.prepare('SELECT dataset_version, dataset_name, split, row_count, status FROM dataset_metadata WHERE id = 1').first())
     if (storage.datasetVersion !== datasetVersion || metadata.dataset_version !== datasetVersion || metadata.dataset_name !== datasetName
       || metadata.split !== 'train' || metadata.status !== 'ready' || !Number.isSafeInteger(metadata.row_count)) throw new Error('Dataset is not ready')
