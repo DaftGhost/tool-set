@@ -56,6 +56,7 @@ corepack pnpm run test
 | `scripts/dev-site.mjs` | 启动目录页并代理所有已登记工具 |
 | `scripts/*.test.mjs` | 开发服务、构建器和目录页测试 |
 | `docs/` | 跨工具的产品与运维资料；多数文件按仓库规则仅保存在本地 |
+| `.test-result/` | 一次性测试文件、临时测试脚本及验收输出，仅保存在本地 |
 | `wrangler.json` | Worker 入口、静态资源、D1 绑定与源数据版本配置 |
 | `package.json` | 根级依赖、命令和开发服务默认地址 |
 | `site/` | `pnpm run build` 生成的完整静态站点 |

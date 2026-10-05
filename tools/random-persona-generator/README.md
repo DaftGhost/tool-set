@@ -70,4 +70,4 @@ corepack pnpm run build
 
 保留上一个已验证版本的数据与 Worker 配置。Worker 回退不会恢复数据库；回退时同时核对绑定、源版本和就绪状态。本工具只提供本地导入命令，远程操作需在部署阶段另行执行并验收。
 
-来源：[固定版本数据集](https://huggingface.co/datasets/nvidia/Nemotron-Personas-USA/tree/5b4cd35ab46490c1da1bd2b5a2324d6f871be180)、[CC BY 4.0](https://creativecommons.org/licenses/by/4.0/)。设计与验收材料位于本地 `docs/random-persona-generator-plan.md`、`docs/random-persona-generator-usa-research.md`，以及同目录的截图和复制全文；这些文件按仓库规则未提交到 Git，克隆仓库不会包含它们，也不影响工具运行。
+来源：[固定版本数据集](https://huggingface.co/datasets/nvidia/Nemotron-Personas-USA/tree/5b4cd35ab46490c1da1bd2b5a2324d6f871be180)、[CC BY 4.0](https://creativecommons.org/licenses/by/4.0/)。计划与核实文档位于本地 `docs/random-persona-generator-plan.md`、`docs/random-persona-generator-usa-research.md`；一次性核查笔记本、验收截图和实际复制全文位于仓库根目录的 `.test-result/random-persona-generator/`。这些本地文件按仓库规则未提交到 Git，克隆仓库不会包含它们，也不影响工具运行。

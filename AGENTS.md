@@ -2,7 +2,15 @@
 
 ## Project Structure & Modules
 
-This repository hosts independent tools that may use different languages and frameworks. `catalog/` contains the site catalog, `scripts/` contains the site builder and its tests, and `tools/<tool-name>/` owns each tool’s source, README, configuration, dependencies, and `tool.json` registration. Put cross-tool product or operations material in `docs/`. The root package coordinates catalog builds and tests; `site/` is generated output, so make changes in source directories instead. Keep each tool’s lockfile and build commands with that tool. Add shared packages only when multiple tools need the same implementation.
+This repository hosts independent tools that may use different languages and frameworks. `catalog/` contains the site catalog, `scripts/` contains the site builder and its tests, and `tools/<tool-name>/` owns each tool’s source, README, configuration, dependencies, and `tool.json` registration. Put cross-tool product or operations documentation in `docs/`. The root package coordinates catalog builds and tests; `site/` is generated output, so make changes in source directories instead. Keep each tool’s lockfile and build commands with that tool. Add shared packages only when multiple tools need the same implementation.
+
+## Documentation and Test Artifacts
+
+- Keep `docs/` for maintained documentation: requirements, plans, design decisions, research findings, and operating instructions.
+- Store one-off test files, temporary test scripts, executable audit notebooks, screenshots, logs, raw outputs, and copied acceptance samples under the repository-root `./.test-result/<task>/`. Classify by purpose, even when an output uses `.md` or `.ipynb`.
+- Keep reusable automated tests and their fixtures with the owning tool or root test suite. Keep application data and import checkpoints in the paths required by their runtime or data workflow.
+- Keep `./.test-result/` ignored by Git and outside build inputs. Documentation may summarize results and link to local evidence; identify local-only evidence so a fresh clone does not imply it contains those files.
+- When moving artifacts, preserve their contents and update every repository reference. Complete the cleanup when all one-off artifacts are in `./.test-result/`, `docs/` contains documentation, and updated links resolve.
 
 ## Adding a Browser Tool
 
