@@ -171,10 +171,13 @@ export function PrivacyProfileGenerator({
   return (
     <main className="page-shell">
       <header className="topbar">
-        <a aria-label="隐私替代资料生成器首页" className="brand" href="#top">
-          <span className="brand__mark"><PrivacyMark /></span>
-          <span className="brand__name">隐私替代资料</span>
-        </a>
+        <div className="topbar__links">
+          <a aria-label="隐私替代资料生成器首页" className="brand" href="#top">
+            <span className="brand__mark"><PrivacyMark /></span>
+            <span className="brand__name">隐私替代资料</span>
+          </a>
+          <a className="catalog-link" href="../../">所有工具</a>
+        </div>
         <span className="locality-indicator"><span aria-hidden="true" />仅在此浏览器处理</span>
       </header>
 

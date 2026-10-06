@@ -57,10 +57,28 @@ a:focus-visible {
   display: flex;
   align-items: center;
   justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 8px 16px;
   padding: 0 max(28px, calc((100vw - 1240px) / 2));
+  padding-block: 12px;
   border-bottom: 1px solid var(--line);
   background: rgb(250 251 247 / 90%);
 }
+
+.topbar__links {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.catalog-link {
+  color: var(--muted);
+  font-size: 12px;
+  white-space: nowrap;
+  text-underline-offset: 3px;
+}
+
+.catalog-link:hover { color: var(--primary-deep); }
 
 .brand {
   display: inline-flex;
