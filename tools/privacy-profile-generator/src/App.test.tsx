@@ -60,8 +60,27 @@ describe('PrivacyProfileGenerator', () => {
     await user.click(within(nameGroup).getByRole('button', { name: '复制姓名的英语形式' }))
     await waitFor(() => expect(clipboard.copy).toHaveBeenCalledTimes(2))
     const englishName = vi.mocked(clipboard.copy).mock.calls[1][0]
-    expect(englishName).toMatch(/^[A-Z][a-z]+ [A-Z][a-z]+$/)
+    expect(englishName).toMatch(/^[A-Z][a-z]+(?: [A-Z][a-z]+)+$/)
     expect(englishName).not.toBe(localName)
+  })
+
+  it.each(['zh-CN', 'en-US', 'en-GB'])('omits language labels on single values in %s and still copies them', async (regionId) => {
+    const user = userEvent.setup()
+    render(<PrivacyProfileGenerator repository={repository} clipboard={clipboard} />)
+    await user.selectOptions(screen.getByRole('combobox', { name: '资料地区' }), regionId)
+    await user.click(screen.getByRole('button', { name: '生成资料' }))
+    await screen.findByRole('group', { name: '姓名' })
+
+    const labels = regionId === 'zh-CN'
+      ? ['邮政编码', '邮箱', '手机号']
+      : ['姓名', '出生日期', '地址', '邮政编码', '邮箱', '手机号']
+    for (const label of labels) {
+      const group = screen.getByRole('group', { name: label })
+      expect(within(group).queryByText(/本地形式|英语形式|英语（地区形式）/u)).not.toBeInTheDocument()
+      const value = group.querySelector('.field-value')!.textContent
+      await user.click(within(group).getByRole('button', { name: `复制${label}` }))
+      expect(clipboard.copy).toHaveBeenLastCalledWith(value)
+    }
   })
 
   it('renders a registered regional field only for its region and copies its English value', async () => {

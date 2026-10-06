@@ -9,7 +9,7 @@ interface ProfileFieldRowProps {
 interface ValueCopyProps {
   readonly field: GeneratedField
   readonly language: 'local' | 'english'
-  readonly languageLabel: string
+  readonly languageLabel?: string
   readonly value: string
   readonly onCopy: ProfileFieldRowProps['onCopy']
 }
@@ -29,9 +29,9 @@ function ValueCopy({ field, language, languageLabel, value, onCopy }: ValueCopyP
     : `复制${field.label}`
 
   return (
-    <div className="value-copy">
+    <div className={languageLabel ? 'value-copy' : 'value-copy value-copy--single'}>
       <div className="value-copy__heading">
-        <span>{languageLabel}</span>
+        {languageLabel && <span>{languageLabel}</span>}
         <button
           aria-label={actionLabel}
           className="copy-button"
@@ -58,7 +58,7 @@ export function ProfileFieldRow({ field, regionId, onCopy }: ProfileFieldRowProp
         <ValueCopy
           field={field}
           language="local"
-          languageLabel={localLabel}
+          languageLabel={hasEnglishValue ? localLabel : undefined}
           onCopy={onCopy}
           value={field.localValue}
         />

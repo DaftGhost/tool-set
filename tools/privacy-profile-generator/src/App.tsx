@@ -296,7 +296,7 @@ export function PrivacyProfileGenerator({
 
           <div className="history-footnote">
             <span aria-hidden="true">⌂</span>
-            <p>记录留在本机浏览器中。清理浏览器数据或使用其他设备时，记录可能无法保留。</p>
+            <p>记录仅保存在当前浏览器中。清除本网站的浏览器数据会删除记录；其他设备无法查看这些记录。</p>
           </div>
         </aside>
       </div>

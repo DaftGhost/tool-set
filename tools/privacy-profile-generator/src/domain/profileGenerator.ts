@@ -11,7 +11,7 @@ import {
 import { emptyRegionFieldRegistry, type RegionFieldRegistry } from './regionFieldRegistry'
 import { romanizeChinese, romanizeJapaneseKana, romanizeKorean } from './transliteration'
 
-const dataVersion = '2026-09-r1'
+const dataVersion = '2026-10-r1'
 const regionLocales: Record<RegionId, LocaleDefinition> = {
   'zh-CN': zh_CN,
   'en-US': en_US,
@@ -57,8 +57,42 @@ const japaneseAddresses = [
 
 const chineseAddresses = [
   { province: '北京市', city: '北京市', district: '朝阳区', street: '光华路', postalCode: '100020' },
-  { province: '上海市', city: '上海市', district: '浦东新区', street: '世纪大道', postalCode: '200120' },
-  { province: '浙江省', city: '杭州市', district: '西湖区', street: '文三路', postalCode: '310012' },
+  { province: '天津市', city: '天津市', district: '和平区', street: '和平路', postalCode: '300020' },
+  { province: '河北省', city: '石家庄市', district: '长安区', street: '和平东路', postalCode: '050031' },
+  { province: '山西省', city: '太原市', district: '迎泽区', street: '五一路', postalCode: '030002' },
+  { province: '内蒙古自治区', city: '呼和浩特市', district: '赛罕区', street: '新建西街', postalCode: '010020' },
+  { province: '辽宁省', city: '沈阳市', district: '和平区', street: '三好街', postalCode: '110004' },
+  { province: '吉林省', city: '长春市', district: '南关区', street: '东岭南街', postalCode: '130022' },
+  { province: '黑龙江省', city: '哈尔滨市', district: '南岗区', street: '保健路', postalCode: '150081' },
+  { province: '上海市', city: '上海市', district: '浦东新区', street: '世纪大道', postalCode: '200135' },
+  { province: '江苏省', city: '南京市', district: '鼓楼区', street: '凤凰西街', postalCode: '210029' },
+  { province: '浙江省', city: '杭州市', district: '西湖区', street: '古翠路', postalCode: '310012' },
+  { province: '安徽省', city: '合肥市', district: '包河区', street: '繁华大道', postalCode: '230051' },
+  { province: '福建省', city: '福州市', district: '鼓楼区', street: '古田路', postalCode: '350005' },
+  { province: '江西省', city: '南昌市', district: '东湖区', street: '叠山路', postalCode: '330006' },
+  { province: '山东省', city: '济南市', district: '历下区', street: '按察司街', postalCode: '250011' },
+  { province: '河南省', city: '郑州市', district: '金水区', street: '金水东路', postalCode: '450046' },
+  { province: '湖北省', city: '武汉市', district: '江汉区', street: '中山大道', postalCode: '430021' },
+  { province: '湖南省', city: '长沙市', district: '芙蓉区', street: '远大一路', postalCode: '410001' },
+  { province: '广东省', city: '广州市', district: '越秀区', street: '东湖西路', postalCode: '510100' },
+  { province: '广西壮族自治区', city: '南宁市', district: '青秀区', street: '佛子岭路', postalCode: '530025' },
+  { province: '海南省', city: '海口市', district: '美兰区', street: '人民大道', postalCode: '570208' },
+  { province: '重庆市', city: '重庆市', district: '渝中区', street: '中兴路', postalCode: '400010' },
+  { province: '四川省', city: '成都市', district: '锦江区', street: '中道街', postalCode: '610020' },
+  { province: '贵州省', city: '贵阳市', district: '南明区', street: '博爱路', postalCode: '550002' },
+  { province: '云南省', city: '昆明市', district: '五华区', street: '二环西路', postalCode: '650106' },
+  { province: '西藏自治区', city: '拉萨市', district: '城关区', street: '吉拉路', postalCode: '850009' },
+  { province: '陕西省', city: '西安市', district: '碑林区', street: '三学街', postalCode: '710001' },
+  { province: '甘肃省', city: '兰州市', district: '城关区', street: '东岗东路', postalCode: '730020' },
+  { province: '青海省', city: '西宁市', district: '城中区', street: '北斗宫街', postalCode: '810099' },
+  { province: '宁夏回族自治区', city: '银川市', district: '兴庆区', street: '中山北街', postalCode: '750004' },
+  { province: '新疆维吾尔自治区', city: '乌鲁木齐市', district: '天山区', street: '胜利路', postalCode: '830049' },
+] as const
+
+const chineseMobilePrefixes = [
+  '130', '131', '132', '133', '135', '136', '137', '138', '139',
+  '150', '151', '152', '153', '155', '156', '157', '158', '159',
+  '180', '181', '182', '183', '184', '185', '186', '187', '188', '189', '190', '192', '196', '197',
 ] as const
 
 const koreanAddresses = [
@@ -267,7 +301,7 @@ function phoneField(regionId: RegionId, faker: Faker): { field: GeneratedField; 
 
   const nationalNumber = faker.string.numeric(8)
   const callingCode = regionId === 'zh-CN' ? '+86' : regionId === 'ja-JP' ? '+81' : '+82'
-  const mobilePrefix = regionId === 'zh-CN' ? '131' : regionId === 'ja-JP' ? '090' : '010'
+  const mobilePrefix = regionId === 'zh-CN' ? choose(chineseMobilePrefixes, faker) : regionId === 'ja-JP' ? '090' : '010'
   const parsed = parsePhoneNumber(`${callingCode}${mobilePrefix}${nationalNumber}`)
   if (!parsed) throw new Error(`Could not format the ${regionId} mobile-number shape`)
 

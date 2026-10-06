@@ -262,6 +262,10 @@ a:focus-visible {
 
 .value-copy { min-width: 0; }
 
+.value-copy--single { display: flex; align-items: start; gap: 8px; }
+.value-copy--single .value-copy__heading { order: 2; flex: 0 0 auto; }
+.value-copy--single .field-value { flex: 1; min-width: 0; margin: 0; }
+
 .value-copy__heading {
   display: flex;
   min-height: 24px;
