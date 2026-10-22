@@ -16,13 +16,14 @@
     "data:prepare-subset": "node --experimental-strip-types scripts/prepareSubset.ts",
     "data:import-local": "node --experimental-strip-types scripts/importLocal.ts",
     "data:download": "node --experimental-strip-types scripts/downloadDataset.ts",
-    "types:generate": "wrangler types ../../worker/worker-configuration.d.ts --config ../../wrangler.json"
+    "types:generate": "wrangler types ../../worker/worker-configuration.d.ts --config ../../wrangler.json --include-runtime=false"
   },
   "dependencies": {
     "react": "^19.3.0",
     "react-dom": "^19.3.0"
   },
   "devDependencies": {
+    "@cloudflare/workers-types": "^5.20261021.1",
     "@testing-library/jest-dom": "^6.8.0",
     "@testing-library/react": "^16.3.0",
     "@testing-library/user-event": "^14.6.1",
