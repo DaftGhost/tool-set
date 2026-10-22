@@ -1,6 +1,6 @@
 import { spawn } from 'node:child_process'
 import { createRequire } from 'node:module'
-import { createServer as createNetServer } from 'node:net'
+import { connect, createServer as createNetServer } from 'node:net'
 import path from 'node:path'
 import { setTimeout as delay } from 'node:timers/promises'
 import { parseArgs } from 'node:util'
@@ -28,6 +28,15 @@ async function availablePort() {
   if (!address || typeof address === 'string') throw new Error('Cannot allocate Worker port')
   await new Promise<void>((resolve, reject) => server.close(error => error ? reject(error) : resolve()))
   return address.port
+}
+
+// A TCP connect avoids sending an HTTP request that Wrangler would log as a 404.
+function isListening(port: number) {
+  return new Promise<boolean>(resolve => {
+    const socket = connect(port, '127.0.0.1')
+    socket.once('connect', () => { socket.destroy(); resolve(true) })
+    socket.once('error', () => resolve(false))
+  })
 }
 
 configureLocalRuntime()
@@ -68,10 +77,7 @@ try {
     if (stopping) break
     if (startupError) throw startupError
     if (worker.exitCode !== null || worker.signalCode !== null) throw new Error('Local Worker failed to start')
-    try {
-      const response = await fetch(workerOrigin, { signal: AbortSignal.timeout(500) })
-      if (response.status === 404) break
-    } catch { /* Retry until the local Worker is listening. */ }
+    if (await isListening(workerPort)) break
     if (Date.now() > deadline) throw new Error('Local Worker startup timed out')
     await delay(100)
   }
