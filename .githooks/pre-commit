@@ -1,0 +1,14 @@
+#!/bin/bash
+limit=20480
+status=0
+
+while IFS= read -r -d '' file; do
+  [ "$(basename "$file")" = pnpm-lock.yaml ] && continue
+  size=$(git cat-file -s ":$file")
+  if [ "$size" -ge "$limit" ]; then
+    echo "$size bytes  $file (limit: under $limit bytes, pnpm-lock.yaml excluded)" >&2
+    status=1
+  fi
+done < <(git diff --cached --name-only --diff-filter=ACMR -z)
+
+exit $status

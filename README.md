@@ -42,6 +42,12 @@ corepack pnpm run serve
 corepack pnpm run test
 ~~~
 
+提交前检查：`.githooks/pre-commit` 会拒绝暂存区中大小达到 20480 字节的文件，各级 `pnpm-lock.yaml` 除外。克隆仓库后需在本地启用一次：
+
+~~~sh
+git config core.hooksPath .githooks
+~~~
+
 各工具的功能、配置和独立运行命令见[工具说明](#工具说明)。
 
 ## 项目结构
