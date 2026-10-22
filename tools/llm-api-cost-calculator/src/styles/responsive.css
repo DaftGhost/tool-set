@@ -1,0 +1,95 @@
+@media (max-width: 860px) {
+  .main-content { width: min(100% - 40px, 740px); padding-top: 36px; }
+  .topbar { padding-inline: 20px; }
+  .topbar-tools { gap: 12px; }
+  .page-intro { align-items: flex-start; flex-direction: column; gap: 13px; margin-bottom: 23px; }
+  .intro-copy { max-width: 470px; margin: 0; }
+  .workbench-grid { grid-template-columns: 1fr; }
+  .parameter-panel { grid-row: 1; }
+  .summary-card { grid-row: 2; }
+}
+
+@media (max-width: 560px) {
+  .topbar { height: 62px; padding-inline: 16px; }
+  .topbar-tools { gap: 8px; }
+  .brand { gap: 8px; }
+  .brand-mark { width: 25px; height: 25px; }
+  .brand-name { font-size: 15px; }
+  .currency-switch button { min-width: 34px; height: 25px; padding-inline: 5px; font-size: 8px; }
+  .save-status { gap: 7px; font-size: 9px; }
+  .save-dot { width: 6px; height: 6px; }
+  .main-content { width: calc(100% - 28px); padding: 28px 0 44px; }
+  .page-intro { gap: 10px; margin-bottom: 18px; }
+  .page-intro .eyebrow { margin-bottom: 8px; font-size: 9px; }
+  .page-intro h1 { font-size: clamp(27px, 8vw, 34px); letter-spacing: -.065em; }
+  .intro-copy { max-width: 340px; font-size: 11px; }
+  .storage-notice { margin-bottom: 12px; padding: 10px 11px; font-size: 10px; }
+  .surface, .summary-card, .comparison-panel, .chart-panel { border-radius: 11px; }
+  .comparison-panel { margin-bottom: 13px; padding: 18px 15px 16px; }
+  .section-heading { align-items: flex-start; margin-bottom: 14px; }
+  .section-heading h2 { font-size: 16px; }
+  .section-hint { max-width: 220px; font-size: 10px; }
+  .button { min-height: 36px; padding-inline: 10px; font-size: 10px; white-space: nowrap; }
+  .scenario-grid { grid-template-columns: 1fr; gap: 8px; }
+  .scenario-card { padding: 12px 12px 10px; }
+  .scenario-detail { margin-top: 9px; }
+  .workbench-grid { gap: 12px; }
+  .parameter-panel { padding: 19px 16px 16px; }
+  .summary-card { padding: 19px 17px 16px; }
+  .summary-topline h2, .panel-heading h2 { font-size: 16px; }
+  .summary-content { margin-top: 15px; }
+  .total-display { min-height: 82px; padding: 16px; }
+  .total-display span { font-size: 10px; }
+  .total-display strong { font-size: clamp(22px, 7vw, 28px); }
+  .cost-rail { margin: 15px 1px 10px; }
+  .cost-line { min-height: 43px; }
+  .cost-subline { min-height: 32px; }
+  .line-copy { align-items: flex-start; flex-direction: column; gap: 3px; }
+  .line-title { font-size: 10px; }
+  .cost-subline .line-title { font-size: 9px; }
+  .line-copy small { font-size: 8px; }
+  .cost-line > strong { font-size: 11px; }
+  .cost-subline > strong { font-size: 10px; }
+  .scenario-name-label { margin-top: 16px; }
+  .scenario-name-input { width: 100%; }
+  .parameter-list { grid-template-columns: 1fr; gap: 14px; margin-top: 18px; }
+  .field-heading { margin-bottom: 6px; }
+  .stepper { grid-template-columns: 42px minmax(60px, 1fr) 42px; gap: 7px; }
+  .step-button { width: 42px; height: 44px; }
+  .stepper input { height: 44px; }
+  .price-section { margin-top: 19px; padding-top: 17px; }
+  .price-heading { align-items: flex-start; flex-direction: column; gap: 10px; }
+  .price-meta { width: 100%; justify-items: start; }
+  .price-fields { grid-template-columns: 1fr; gap: 11px; }
+  .catalog-selection { align-items: flex-start; flex-direction: column; }
+  .catalog-selection button { width: 100%; }
+  .price-fields .field-heading { min-height: 0; margin-bottom: 6px; }
+  .price-fields .field-heading label { font-size: 11px; }
+  .price-fields .field-unit { font-size: 9px; }
+  .price-fields .stepper { grid-template-columns: 40px minmax(60px, 1fr) 40px; gap: 7px; }
+  .price-fields .step-button { width: 40px; height: 42px; font-size: 19px; }
+  .price-fields .stepper input { height: 42px; padding: 0 8px; font-size: 12px; }
+  .chart-panel { margin-top: 13px; padding: 19px 14px 16px; }
+  .chart-heading { align-items: flex-start; flex-direction: column; gap: 12px; margin-bottom: 16px; }
+  .chart-heading h2 { font-size: 18px; }
+  .cursor-estimate { align-items: flex-start; gap: 5px; }
+  .chart-options { display: grid; gap: 14px; padding: 12px 10px; }
+  .control-group { gap: 6px; }
+  .segmented-control { gap: 4px; }
+  .segmented-control button { min-height: 30px; padding-inline: 8px; font-size: 9px; }
+  .chart-frame { margin-inline: -5px; }
+  .cost-chart { min-height: 190px; }
+  .chart-grid text { font-size: 10px; }
+  .chart-series line { stroke-width: 3; }
+  .chart-scrubber { grid-template-columns: auto minmax(30px, 1fr) auto; gap: 7px; font-size: 9px; }
+  .chart-legend { gap: 9px 14px; margin-inline: 5px; padding: 10px; }
+  .chart-legend > span { gap: 5px; font-size: 9px; }
+  .chart-legend strong { font-size: 9px; }
+  .crossing-summary { gap: 13px 22px; padding: 11px; }
+  .crossing-summary strong { font-size: 11px; }
+  .crossing-table th, .crossing-table td { padding: 9px 7px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { scroll-behavior: auto !important; animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; }
+}
