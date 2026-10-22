@@ -54,6 +54,7 @@ corepack pnpm run test
 | `worker/` | 站点 Worker 入口与绑定类型，连接人设接口和静态资源 |
 | `scripts/build-site.mjs` | 扫描 `tool.json`，构建并组装完整站点 |
 | `scripts/dev-site.mjs` | 启动目录页并代理所有已登记工具 |
+| `scripts/devToolMetadata.mjs` | 读取并校验开发服务使用的 `tool.json` 元数据 |
 | `scripts/*.test.mjs` | 开发服务、构建器和目录页测试 |
 | `docs/` | 跨工具的产品与运维资料；多数文件按仓库规则仅保存在本地 |
 | `.test-result/` | 一次性测试文件、临时测试脚本及验收输出，仅保存在本地 |
