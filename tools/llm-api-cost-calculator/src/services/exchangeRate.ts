@@ -1,7 +1,8 @@
 import { isRateDate } from '../domain/currency'
 import type { ExchangeRateSnapshot } from '../domain/currency'
 
-const USD_CNY_RATE_URL = 'https://api.frankfurter.dev/v2/rate/usd/cny'
+// The default blended feed is dated by its latest (possibly forward-dated) source; the ECB rate carries its real date.
+const USD_CNY_RATE_URL = 'https://api.frankfurter.dev/v2/rate/usd/cny?providers=ecb'
 
 export async function fetchLatestUsdCnyRate(): Promise<ExchangeRateSnapshot> {
   const response = await fetch(USD_CNY_RATE_URL, {

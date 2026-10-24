@@ -29,11 +29,11 @@ Use Node.js 24.x and Corepack; the root package pins pnpm 12.7.0.
 - `corepack pnpm run test` runs the site-builder and catalog tests.
 - `corepack pnpm run build` builds the catalog and all registered browser tools into `site/`.
 - `corepack pnpm run serve` serves the built site locally at `http://localhost:9527/`.
-- For the calculator, run `cd tools/llm-api-cost-calculator && corepack pnpm install && corepack pnpm run dev`; use `corepack pnpm run typecheck` there for its TypeScript/Vue check.
+- For the calculator, run `cd tools/llm-api-cost-calculator && corepack pnpm install && corepack pnpm run dev`; use `corepack pnpm run typecheck` there for its TypeScript check.
 
 ## Coding Style & Naming
 
-Use TypeScript (`.ts`/`.tsx`) for catalog and tool implementation code. Reject JavaScript (`.js`/`.jsx`) for new modules; migrate an existing JavaScript module to TypeScript before changing its behavior. Root Node build/server scripts and tests remain `.mjs` for the current Node runner. Use two-space indentation and semicolon-free style. Use camelCase for functions and module files, PascalCase for Vue components, and kebab-case for tool directory names (for example, `llm-api-cost-calculator`). Keep tool-specific formatting and linting choices local to that tool; the repository has no global formatter or linter.
+Use TypeScript (`.ts`/`.tsx`) for catalog and tool implementation code. Reject JavaScript (`.js`/`.jsx`) for new modules; migrate an existing JavaScript module to TypeScript before changing its behavior. Root Node build/server scripts and tests remain `.mjs` for the current Node runner. Use two-space indentation and semicolon-free style. Use camelCase for functions and module files, PascalCase for React components, and kebab-case for tool directory names (for example, `llm-api-cost-calculator`). Keep tool-specific formatting and linting choices local to that tool; the repository has no global formatter or linter.
 
 ## Testing Guidelines
 
