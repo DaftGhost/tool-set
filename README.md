@@ -4,7 +4,7 @@
 
 ## 本地开发整个站点
 
-需要 Node.js 24.12 或更高的 24.x 版本和 Corepack。根目录通过 `packageManager` 固定使用 pnpm 12.7.0；首次执行时 Corepack 会准备对应版本。首次使用时，在根目录安装目录页和开发服务依赖，并在工具目录安装工具依赖：
+需要 Node.js 24.15 或更高的 24.x 版本和 Corepack。根目录通过 `packageManager` 固定使用 pnpm 12.15.0；首次执行时 Corepack 会准备对应版本。首次使用时，在根目录安装目录页和开发服务依赖，并在工具目录安装工具依赖：
 
 ~~~sh
 corepack pnpm install --frozen-lockfile
@@ -121,7 +121,7 @@ corepack pnpm run preview:workers --persist-to .wrangler/state
 | 根目录（Root directory） | 仓库根目录 |
 | 构建命令（Build command） | `pnpm run test && pnpm run build` |
 | 部署命令（Deploy command） | `pnpm exec wrangler deploy` |
-| 构建环境变量 | `NODE_VERSION=24.18.0`、`PNPM_VERSION=12.7.0` |
+| 构建环境变量 | `NODE_VERSION=24.18.0`、`PNPM_VERSION=12.15.0` |
 
 连接后，每次推送到 `main` 都会触发测试、全量构建和部署；测试或构建失败时不会更新线上站点。其他分支的预览构建（Preview builds）保持关闭。测试、构建和生产发布均由 Workers Builds 执行，仓库不保留 GitHub Actions 工作流，本地 Wrangler 命令仍可用于手动发布。
 

@@ -8,7 +8,7 @@
 
 ## 本地启动
 
-使用 Node.js 24.x、Corepack 和 pnpm 12.7.0。在本目录运行：
+使用 Node.js 24.x、Corepack 和 pnpm 12.15.0。在本目录运行：
 
 ```sh
 corepack pnpm install --frozen-lockfile

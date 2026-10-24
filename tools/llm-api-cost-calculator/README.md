@@ -45,7 +45,7 @@
 
 ## 运行
 
-需要 Node.js 24.12 或更高的 24.x 版本。
+需要 Node.js 24.15 或更高的 24.x 版本。
 
 ~~~sh
 pnpm install

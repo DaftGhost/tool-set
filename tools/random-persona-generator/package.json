@@ -3,9 +3,9 @@
   "version": "0.1.0",
   "private": true,
   "type": "module",
-  "packageManager": "pnpm@12.7.0",
+  "packageManager": "pnpm@12.15.0",
   "engines": {
-    "node": ">=24.12.0 <25"
+    "node": ">=24.15.0 <25"
   },
   "scripts": {
     "dev": "node --experimental-strip-types scripts/dev.ts",
@@ -19,23 +19,23 @@
     "types:generate": "wrangler types ../../worker/worker-configuration.d.ts --config ../../wrangler.json --include-runtime=false"
   },
   "dependencies": {
-    "react": "^19.3.0",
-    "react-dom": "^19.3.0"
+    "react": "^19.3.1",
+    "react-dom": "^19.3.1"
   },
   "devDependencies": {
-    "@cloudflare/workers-types": "^5.20261021.1",
-    "@testing-library/jest-dom": "^6.8.0",
-    "@testing-library/react": "^16.3.0",
-    "@testing-library/user-event": "^14.6.1",
-    "@types/node": "^26.6.2",
+    "@cloudflare/workers-types": "^5.20261023.1",
+    "@testing-library/jest-dom": "^7.0.1",
+    "@testing-library/react": "^16.3.3",
+    "@testing-library/user-event": "^14.6.8",
+    "@types/node": "^26.6.5",
     "@types/react": "^19.3.0",
     "@types/react-dom": "^19.3.0",
-    "@vitejs/plugin-react": "^6.1.1",
-    "hyparquet": "1.31.2",
-    "jsdom": "^26.1.0",
+    "@vitejs/plugin-react": "^6.1.2",
+    "hyparquet": "1.31.5",
+    "jsdom": "^30.1.3",
     "typescript": "^7.0.2",
-    "vite": "^8.3.1",
-    "vitest": "^5.0.0",
-    "wrangler": "4.144.0"
+    "vite": "^8.3.5",
+    "vitest": "^5.0.5",
+    "wrangler": "4.152.0"
   }
 }

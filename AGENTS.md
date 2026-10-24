@@ -24,7 +24,7 @@ Follow this sequence when adding a directory registered by `tools/<tool-name>/to
 
 ## Build, Test, and Development Commands
 
-Use Node.js 24.x and Corepack; the root package pins pnpm 12.7.0.
+Use Node.js 24.x and Corepack; the root package pins pnpm 12.15.0.
 
 - `corepack pnpm run test` runs the site-builder and catalog tests.
 - `corepack pnpm run build` builds the catalog and all registered browser tools into `site/`.
