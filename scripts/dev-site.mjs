@@ -1,3 +1,4 @@
+import tailwindcss from '@tailwindcss/vite'
 import { spawn } from 'node:child_process'
 import { readFileSync } from 'node:fs'
 import net from 'node:net'
@@ -309,7 +310,7 @@ export async function startDevelopmentSite({
       configFile: false,
       root: path.resolve(catalogDir),
       appType: 'spa',
-      plugins: [createReloadPlugin(tools, publicTools)],
+      plugins: [tailwindcss(), createReloadPlugin(tools, publicTools)],
       server: {
         host,
         port: rootPort,
