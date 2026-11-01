@@ -169,29 +169,30 @@ export function PrivacyProfileGenerator({
   }
 
   return (
-    <main className="page-shell">
-      <header className="topbar">
-        <div className="topbar__links">
-          <a aria-label="隐私替代资料生成器首页" className="brand" href="#top">
-            <span className="brand__mark"><PrivacyMark /></span>
-            <span className="brand__name">隐私替代资料</span>
+    <main className="min-h-screen">
+      <header className="profile-topbar flex flex-wrap items-center justify-between gap-x-4 gap-y-2 border-b border-line bg-surface/90">
+        <div className="flex items-center gap-4">
+          <a aria-label="隐私替代资料生成器首页" className="inline-flex items-center gap-2.5 text-ink no-underline max-phone:gap-2" href="#top">
+            <span className="brand-mark"><PrivacyMark /></span>
+            <span className="brand-name">隐私替代资料</span>
           </a>
-          <a className="catalog-link" href="../../">所有工具</a>
+          <a className="tool-link hover:text-primary-deep" href="../../">所有工具</a>
         </div>
-        <span className="locality-indicator"><span aria-hidden="true" />仅在此浏览器处理</span>
+        <span className="locality-label inline-flex items-center gap-2 max-phone:gap-1.5"><span aria-hidden="true" className="locality-dot" />仅在此浏览器处理</span>
       </header>
 
-      <div className="workspace" id="top">
-        <section aria-labelledby="page-title" className="main-column">
-          <div className="intro">
-            <h1 id="page-title">不用填写真实资料，也能继续</h1>
-            <p>选择一个资料地区，生成一组协调的合成值，再按需要逐项复制。</p>
+      <div className="profile-workspace" id="top">
+        <section aria-labelledby="page-title" className="min-w-0">
+          <div className="intro-block">
+            <h1 className="intro-measure m-0 text-display text-ink max-phone:text-display-phone" id="page-title">不用填写真实资料，也能继续</h1>
+            <p className="intro-lede">选择一个资料地区，生成一组协调的合成值，再按需要逐项复制。</p>
           </div>
 
-          <section aria-label="生成设置" className="generator-controls">
-            <label className="region-control" htmlFor="profile-region">
+          <section aria-label="生成设置" className="generator-bar border border-line bg-surface shadow-panel">
+            <label className="region-label" htmlFor="profile-region">
               <span>资料地区</span>
               <select
+                className="region-select"
                 id="profile-region"
                 onChange={(event) => setRegionId(event.target.value as RegionId)}
                 value={regionId}
@@ -201,20 +202,22 @@ export function PrivacyProfileGenerator({
                 ))}
               </select>
             </label>
-            <button className="generate-button" disabled={isGenerating || isClearing || showClearDialog} onClick={handleGenerate} type="button">
-              <span aria-hidden="true" className="generate-button__symbol">＋</span>
+            <button className="generate-control inline-flex items-center justify-center gap-2 border border-primary bg-primary text-on-deep enabled:hover:border-primary-deep enabled:hover:bg-primary-deep" disabled={isGenerating || isClearing || showClearDialog} onClick={handleGenerate} type="button">
+              <span aria-hidden="true" className="generate-symbol">＋</span>
               {isGenerating ? '正在生成…' : '生成资料'}
             </button>
           </section>
 
-          <section aria-labelledby="profile-heading" className="output-sheet">
-            <div className="output-sheet__header">
+          <section aria-labelledby="profile-heading" className="panel-shape sheet-edge overflow-hidden border border-line bg-surface shadow-panel">
+            <div className="sheet-header border-b border-line-soft">
               <div>
-                <h2 id="profile-heading">资料内容</h2>
-                <p>{activeProfile ? `${regionLabel(activeProfile.regionId)} · ${createdLabel(activeProfile.createdAt)}` : '生成后会显示在这里'}</p>
+                <h2 className="section-title" id="profile-heading">资料内容</h2>
+                <p className="subhead">{activeProfile ? `${regionLabel(activeProfile.regionId)} · ${createdLabel(activeProfile.createdAt)}` : '生成后会显示在这里'}</p>
               </div>
               {activeProfile && saveState && (
-                <span className={saveState === 'saved' ? 'save-indicator' : 'save-indicator save-indicator--pending'}>
+                <span className={saveState === 'saved'
+                  ? 'save-chip shrink-0 rounded-badge bg-primary-soft text-primary-deep'
+                  : 'save-chip shrink-0 rounded-badge bg-brass-soft text-warn'}>
                   {saveState === 'saved' ? '已保存到本机' : '本次未保存'}
                 </span>
               )}
@@ -222,42 +225,42 @@ export function PrivacyProfileGenerator({
 
             {activeProfile ? (
               <>
-                <div aria-label="已生成的资料" className="profile-fields">
+                <div aria-label="已生成的资料" className="field-pad">
                   {activeProfile.fields.map((field) => (
                     <ProfileFieldRow field={field} key={field.id} onCopy={handleCopy} regionId={activeProfile.regionId} />
                   ))}
                 </div>
-                <div className="profile-disclaimer">
+                <div className="disclaimer-pad disclaimer-row border-t border-line-soft bg-surface-alt">
                   <span aria-hidden="true" className="disclaimer-mark">i</span>
-                  <p>这是合成示例，不代表真实或经过核验的身份；地址不保证可投递，任何资料也不保证唯一或被第三方接受。</p>
+                  <p className="disclaimer-copy">这是合成示例，不代表真实或经过核验的身份；地址不保证可投递，任何资料也不保证唯一或被第三方接受。</p>
                 </div>
                 {activeProfile.phoneRisk === 'may-be-assigned' && (
-                  <div className="phone-warning" role="note">
-                    <strong>手机号提示</strong>
-                    <p>此号码只按地区格式生成，可能属于真实用户。请勿用于联系他人或短信、语音验证。</p>
+                  <div className="warning-inset warn-edge rounded-control border border-warn-line bg-warn-bg px-3.5 py-3 text-warn" role="note">
+                    <strong className="warning-title">手机号提示</strong>
+                    <p className="warning-copy">此号码只按地区格式生成，可能属于真实用户。请勿用于联系他人或短信、语音验证。</p>
                   </div>
                 )}
               </>
             ) : (
-              <div className="empty-profile">
-                <span aria-hidden="true" className="empty-profile__glyph">⌁</span>
-                <p>还没有生成资料</p>
-                <span>生成一份合成资料，姓名、地址和联系字段会按所选地区一起变化。</span>
+              <div className="empty-stage">
+                <span aria-hidden="true" className="empty-mark border border-line bg-surface-alt text-primary">⌁</span>
+                <p className="empty-title">还没有生成资料</p>
+                <span className="empty-hint">生成一份合成资料，姓名、地址和联系字段会按所选地区一起变化。</span>
               </div>
             )}
           </section>
 
-          <p aria-live="polite" className="status-message" role="status">{statusMessage}</p>
+          <p aria-live="polite" className="status-line" role="status">{statusMessage}</p>
         </section>
 
-        <aside aria-labelledby="history-heading" className="history-pane">
-          <div className="history-pane__header">
+        <aside aria-labelledby="history-heading" className="history-pad panel-shape border border-line bg-surface shadow-panel max-stack:order-2">
+          <div className="flex items-center justify-between gap-2 border-b border-line-soft pb-4">
             <div>
-              <h2 id="history-heading">本机记录</h2>
-              <p>{profiles.length ? `${profiles.length} 份资料` : '仅此浏览器可查看'}</p>
+              <h2 className="section-title" id="history-heading">本机记录</h2>
+              <p className="subhead">{profiles.length ? `${profiles.length} 份资料` : '仅此浏览器可查看'}</p>
             </div>
             <button
-              className="clear-button"
+              className="clear-action rounded-badge text-muted enabled:hover:bg-clay-soft enabled:hover:text-clay"
               disabled={profiles.length === 0 || isClearing || isGenerating}
               onClick={() => setShowClearDialog(true)}
               type="button"
@@ -266,10 +269,10 @@ export function PrivacyProfileGenerator({
             </button>
           </div>
 
-          {storageState === 'loading' && <p className="history-message">正在读取本机记录…</p>}
-          {storageState === 'error' && <p className="history-message history-message--error">无法读取本地历史</p>}
+          {storageState === 'loading' && <p className="history-note text-muted">正在读取本机记录…</p>}
+          {storageState === 'error' && <p className="history-note text-clay">无法读取本地历史</p>}
           {storageState === 'ready' && profiles.length === 0 && (
-            <p className="history-message">暂无历史记录</p>
+            <p className="history-note text-muted">暂无历史记录</p>
           )}
           {profiles.length > 0 && (
             <ul className="history-list">
@@ -281,12 +284,14 @@ export function PrivacyProfileGenerator({
                     <button
                       aria-current={isSelected ? 'true' : undefined}
                       aria-label={`查看${label}资料记录 ${createdLabel(profile.createdAt)}`}
-                      className={isSelected ? 'history-item history-item--active' : 'history-item'}
+                      className={isSelected
+                        ? 'history-entry w-full border border-primary bg-primary-soft text-left text-primary-deep'
+                        : 'history-entry w-full border border-transparent bg-transparent text-left text-ink hover:bg-surface-alt'}
                       onClick={() => showHistoryProfile(profile)}
                       type="button"
                     >
-                      <span className="history-item__region">{label}</span>
-                      <span className="history-item__date">{createdLabel(profile.createdAt)}</span>
+                      <span className="history-region">{label}</span>
+                      <span className="history-date">{createdLabel(profile.createdAt)}</span>
                     </button>
                   </li>
                 )
@@ -294,21 +299,21 @@ export function PrivacyProfileGenerator({
             </ul>
           )}
 
-          <div className="history-footnote">
-            <span aria-hidden="true">⌂</span>
-            <p>记录仅保存在当前浏览器中。清除本网站的浏览器数据会删除记录；其他设备无法查看这些记录。</p>
+          <div className="footnote-offset footnote-pad note-edge flex items-start gap-2 bg-surface-alt">
+            <span aria-hidden="true" className="footnote-mark">⌂</span>
+            <p className="footnote-copy">记录仅保存在当前浏览器中。清除本网站的浏览器数据会删除记录；其他设备无法查看这些记录。</p>
           </div>
         </aside>
       </div>
 
       {showClearDialog && (
-        <div className="dialog-backdrop">
-          <section aria-labelledby="clear-dialog-title" aria-modal="true" className="confirm-dialog" role="alertdialog">
-            <h2 id="clear-dialog-title">清除全部资料记录？</h2>
-            <p>这会删除此浏览器中保存的所有资料，也会关闭当前显示的资料。</p>
-            <div className="confirm-dialog__actions">
-              <button className="secondary-button" disabled={isClearing || isGenerating} onClick={() => setShowClearDialog(false)} type="button">取消</button>
-              <button className="danger-button" disabled={isClearing || isGenerating} onClick={handleClearHistory} type="button">
+        <div className="fixed inset-0 z-10 grid place-items-center bg-ink/38 p-5">
+          <section aria-labelledby="clear-dialog-title" aria-modal="true" className="dialog-panel rounded-panel border border-line bg-surface p-panel shadow-overlay" role="alertdialog">
+            <h2 className="dialog-title" id="clear-dialog-title">清除全部资料记录？</h2>
+            <p className="dialog-copy">这会删除此浏览器中保存的所有资料，也会关闭当前显示的资料。</p>
+            <div className="dialog-actions">
+              <button className="dialog-button rounded-control border border-line bg-primary-soft text-primary-deep enabled:hover:bg-primary-soft-hover" disabled={isClearing || isGenerating} onClick={() => setShowClearDialog(false)} type="button">取消</button>
+              <button className="dialog-button rounded-control border border-clay bg-clay text-on-deep enabled:hover:border-danger-deep enabled:hover:bg-danger-deep" disabled={isClearing || isGenerating} onClick={handleClearHistory} type="button">
                 {isClearing ? '正在清除…' : '确认清除'}
               </button>
             </div>

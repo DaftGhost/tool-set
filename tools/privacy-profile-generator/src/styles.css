@@ -1,0 +1,571 @@
+@layer theme, base, components, utilities;
+
+@import "tailwindcss/theme.css" layer(theme);
+@import "tailwindcss/utilities.css" layer(utilities) source(none);
+
+@source ".";
+
+@import "../../../styles/theme.css";
+@import "../../../styles/base.css";
+
+@layer base {
+  button {
+    cursor: pointer;
+    border: 0;
+    background: transparent;
+    padding: 0;
+    transition-property: color, background-color, border-color;
+    transition-duration: var(--default-transition-duration);
+    transition-timing-function: var(--default-transition-timing-function);
+  }
+
+  button:disabled {
+    cursor: not-allowed;
+    opacity: 0.55;
+  }
+
+  a {
+    text-underline-offset: 3px;
+  }
+}
+
+/* Lengths below have no theme token. They keep this page's current geometry. */
+
+@utility profile-topbar {
+  min-height: theme(--spacing-header);
+  padding-inline: max(theme(--spacing-gutter), calc((100vw - theme(--container-page)) / 2));
+  padding-block: theme(--spacing-3);
+
+  @media (width < theme(--breakpoint-stack)) {
+    padding-inline: theme(--spacing-gutter-stack);
+  }
+
+  @media (width < theme(--breakpoint-phone)) {
+    min-height: 62px;
+    padding-inline: theme(--spacing-4);
+  }
+}
+
+@utility profile-workspace {
+  display: grid;
+  width: min(100% - 2 * theme(--spacing-gutter), theme(--container-page));
+  margin-inline: auto;
+  align-items: start;
+  grid-template-columns: minmax(0, 1fr) 276px;
+  gap: theme(--spacing-section);
+  padding-top: theme(--spacing-block);
+  padding-bottom: theme(--spacing-footer);
+
+  @media (width < theme(--breakpoint-stack)) {
+    width: min(100% - 2 * theme(--spacing-gutter-stack), 740px);
+    grid-template-columns: minmax(0, 1fr);
+    padding-top: 36px;
+  }
+
+  @media (width < theme(--breakpoint-phone)) {
+    width: calc(100% - 2 * theme(--spacing-gutter-phone));
+    gap: 13px;
+    padding-top: theme(--spacing-gutter);
+    padding-bottom: theme(--spacing-block);
+  }
+}
+
+@utility locality-dot {
+  width: 7px;
+  height: 7px;
+  flex: none;
+  border-radius: var(--radius-full);
+  background: var(--color-primary);
+  box-shadow: 0 0 0 3px var(--color-primary-soft);
+}
+
+@utility brand-mark {
+  display: grid;
+  width: theme(--spacing-gutter);
+  height: theme(--spacing-gutter);
+  place-items: center;
+  border-radius: 7px;
+  background: var(--color-primary-deep);
+  color: var(--color-on-deep);
+
+  @media (width < theme(--breakpoint-phone)) {
+    width: theme(--spacing-panel);
+    height: theme(--spacing-panel);
+  }
+}
+
+@utility brand-name {
+  font-size: var(--text-brand);
+  line-height: normal;
+  letter-spacing: var(--text-brand--letter-spacing);
+  font-weight: var(--text-brand--font-weight);
+
+  @media (width < theme(--breakpoint-phone)) {
+    font-size: 15px;
+  }
+}
+
+@utility intro-block {
+  margin: 0 0 theme(--spacing-gutter);
+
+  @media (width < theme(--breakpoint-phone)) {
+    margin-bottom: 19px;
+  }
+}
+
+@utility intro-measure {
+  max-width: 760px;
+
+  @media (width < theme(--breakpoint-phone)) {
+    max-width: 390px;
+  }
+}
+
+@utility intro-lede {
+  margin: 11px 0 0;
+  color: var(--color-muted);
+  font-size: var(--text-ui);
+  font-weight: var(--text-ui--font-weight);
+  line-height: 1.8;
+
+  @media (width < theme(--breakpoint-phone)) {
+    margin-top: theme(--spacing-2);
+    font-size: var(--text-label);
+  }
+}
+
+@utility generator-bar {
+  display: flex;
+  align-items: end;
+  gap: 13px;
+  margin-bottom: theme(--spacing-section);
+  padding: 23px theme(--spacing-panel);
+  border-radius: var(--radius-panel);
+
+  @media (width < theme(--breakpoint-phone)) {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 9px;
+    padding: theme(--spacing-section) 15px;
+    border-radius: 11px;
+  }
+}
+
+@utility tool-link {
+  color: var(--color-muted);
+  font-size: var(--text-ui);
+  line-height: normal;
+  white-space: nowrap;
+  text-decoration-line: underline;
+}
+
+@utility locality-label {
+  color: var(--color-muted);
+  font-size: var(--text-label);
+  line-height: normal;
+
+  @media (width < theme(--breakpoint-phone)) {
+    font-size: var(--text-micro);
+  }
+}
+
+@utility region-label {
+  display: grid;
+  flex: 1;
+  gap: 7px;
+  color: var(--color-muted);
+  font-size: var(--text-ui);
+  font-weight: 700;
+  line-height: normal;
+
+  @media (width < theme(--breakpoint-phone)) {
+    min-width: 0;
+    font-size: var(--text-label);
+  }
+}
+
+@utility region-select {
+  width: 100%;
+  min-height: 42px;
+  padding: 0 38px 0 theme(--spacing-3);
+  border: 1px solid var(--color-line);
+  border-radius: var(--radius-control);
+  background: var(--color-on-deep);
+  color: var(--color-ink);
+
+  @media (width < theme(--breakpoint-phone)) {
+    min-height: 41px;
+    font-size: var(--text-value);
+  }
+}
+
+@utility generate-control {
+  min-height: 42px;
+  padding-inline: 17px;
+  border-radius: 7px;
+  font-size: var(--text-label);
+  font-weight: 700;
+
+  @media (width < theme(--breakpoint-phone)) {
+    min-height: 41px;
+    padding-inline: theme(--spacing-3);
+    font-size: var(--text-ui);
+    white-space: nowrap;
+  }
+}
+
+@utility generate-symbol {
+  font-size: 18px;
+  line-height: 1;
+  font-weight: 400;
+}
+
+@utility panel-shape {
+  border-radius: var(--radius-panel);
+
+  @media (width < theme(--breakpoint-phone)) {
+    border-radius: 11px;
+  }
+}
+
+@utility sheet-edge {
+  border-left: 4px solid var(--color-primary);
+}
+
+@utility sheet-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: theme(--spacing-4);
+  min-height: 73px;
+  padding: 23px theme(--spacing-panel);
+
+  @media (width < theme(--breakpoint-phone)) {
+    min-height: 65px;
+    padding: 19px 15px;
+  }
+}
+
+@utility section-title {
+  margin: 0;
+  color: var(--color-ink);
+  font-size: var(--text-section);
+  font-weight: var(--text-section--font-weight);
+  letter-spacing: var(--text-section--letter-spacing);
+  line-height: normal;
+}
+
+@utility subhead {
+  margin: 5px 0 0;
+  color: var(--color-muted);
+  font-size: var(--text-label);
+  line-height: normal;
+}
+
+@utility save-chip {
+  padding: theme(--spacing-1.5) 9px;
+  font-size: var(--text-label);
+  line-height: normal;
+}
+
+@utility field-pad {
+  padding-inline: theme(--spacing-panel);
+
+  @media (width < theme(--breakpoint-phone)) {
+    padding-inline: 15px;
+  }
+}
+
+@utility field-row {
+  display: grid;
+  grid-template-columns: 118px minmax(0, 1fr);
+  gap: theme(--spacing-4);
+  padding-block: 17px;
+  border-bottom: 1px solid var(--color-line-soft);
+
+  &:last-child {
+    border-bottom: 0;
+  }
+
+  @media (width < theme(--breakpoint-phone)) {
+    grid-template-columns: minmax(0, 1fr);
+    gap: theme(--spacing-2);
+    padding-block: 13px;
+  }
+}
+
+@utility field-label {
+  margin: 3px 0 0;
+  color: var(--color-muted);
+  font-size: var(--text-ui);
+  font-weight: 700;
+  line-height: normal;
+
+  @media (width < theme(--breakpoint-phone)) {
+    margin-top: 0;
+  }
+}
+
+@utility copy-heading {
+  display: flex;
+  min-height: 24px;
+  align-items: center;
+  gap: theme(--spacing-2);
+  font-size: var(--text-label);
+  line-height: normal;
+
+  @media (width < theme(--breakpoint-phone)) {
+    font-size: var(--text-meta);
+  }
+}
+
+@utility copy-action {
+  gap: 5px;
+  padding: 3px 5px;
+  font-size: var(--text-label);
+  line-height: normal;
+
+  @media (width < theme(--breakpoint-phone)) {
+    gap: theme(--spacing-1);
+    padding: 3px;
+    font-size: var(--text-meta);
+  }
+}
+
+@utility field-copy-gap {
+  margin: theme(--spacing-1) 0 0;
+}
+
+@utility field-copy {
+  overflow-wrap: anywhere;
+  color: var(--color-ink);
+  font-size: var(--text-body);
+  font-weight: var(--text-body--font-weight);
+  line-height: 1.55;
+  user-select: text;
+
+  @media (width < theme(--breakpoint-phone)) {
+    font-size: var(--text-value);
+  }
+}
+
+@utility conversion-gap {
+  margin: 5px 0 0;
+}
+
+@utility disclaimer-pad {
+  padding: 13px theme(--spacing-panel) 15px;
+
+  @media (width < theme(--breakpoint-phone)) {
+    padding: theme(--spacing-3) 15px;
+  }
+}
+
+@utility disclaimer-row {
+  display: flex;
+  align-items: start;
+  gap: 9px;
+}
+
+@utility disclaimer-mark {
+  display: grid;
+  width: theme(--spacing-4);
+  height: theme(--spacing-4);
+  flex: none;
+  place-items: center;
+  border: 1px solid var(--color-line);
+  border-radius: var(--radius-full);
+  color: var(--color-muted);
+  font-size: var(--text-label);
+  font-weight: 700;
+  line-height: normal;
+}
+
+@utility disclaimer-copy {
+  margin: 0;
+  color: var(--color-muted);
+  font-size: var(--text-label);
+  line-height: 1.6;
+}
+
+@utility warning-inset {
+  margin: 0 theme(--spacing-panel) theme(--spacing-section);
+
+  @media (width < theme(--breakpoint-phone)) {
+    margin: 0 15px theme(--spacing-3.5);
+  }
+}
+
+@utility warn-edge {
+  border-left: 3px solid var(--color-brass);
+}
+
+@utility warning-title {
+  font-size: var(--text-ui);
+}
+
+@utility warning-copy {
+  margin: theme(--spacing-1) 0 0;
+  font-size: var(--text-ui);
+  line-height: 1.6;
+}
+
+@utility empty-stage {
+  display: grid;
+  min-height: 255px;
+  place-content: center;
+  justify-items: center;
+  padding: theme(--spacing-gutter);
+  text-align: center;
+
+  @media (width < theme(--breakpoint-phone)) {
+    min-height: 220px;
+  }
+}
+
+@utility empty-mark {
+  display: grid;
+  width: 39px;
+  height: 39px;
+  place-items: center;
+  border-radius: 8px;
+  font-size: 27px;
+}
+
+@utility empty-title {
+  margin: 13px 0 theme(--spacing-1);
+  color: var(--color-ink);
+  font-size: var(--text-body);
+  font-weight: 600;
+  line-height: normal;
+}
+
+@utility empty-hint {
+  max-width: 320px;
+  color: var(--color-muted);
+  font-size: var(--text-ui);
+  font-weight: var(--text-ui--font-weight);
+  line-height: 1.6;
+}
+
+@utility status-line {
+  min-height: 24px;
+  margin: 9px theme(--spacing-1) 0;
+  color: var(--color-primary-deep);
+  font-size: var(--text-ui);
+  line-height: normal;
+}
+
+@utility history-pad {
+  padding: 23px theme(--spacing-section);
+
+  @media (width < theme(--breakpoint-phone)) {
+    padding: 19px theme(--spacing-4);
+  }
+}
+
+@utility clear-action {
+  padding: 5px 7px;
+  font-size: var(--text-label);
+  line-height: normal;
+}
+
+@utility history-note {
+  margin: theme(--spacing-section) 2px;
+  font-size: var(--text-ui);
+  line-height: normal;
+}
+
+@utility history-date {
+  color: var(--color-muted);
+  font-family: var(--font-mono);
+  font-size: var(--text-meta);
+  line-height: normal;
+}
+
+@utility history-list {
+  display: grid;
+  gap: 3px;
+  margin: theme(--spacing-2) 0 0;
+  padding: 0;
+  list-style: none;
+
+  @media (width < theme(--breakpoint-stack)) {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  @media (width < theme(--breakpoint-phone)) {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+@utility history-entry {
+  display: grid;
+  gap: theme(--spacing-1);
+  padding: 11px theme(--spacing-2.5);
+  border-radius: 7px;
+}
+
+@utility history-region {
+  font-size: var(--text-ui);
+  font-weight: 600;
+}
+
+@utility footnote-offset {
+  margin-top: theme(--spacing-panel);
+
+  @media (width < theme(--breakpoint-stack)) {
+    margin-top: 15px;
+  }
+}
+
+@utility footnote-pad {
+  padding: theme(--spacing-3) 11px;
+}
+
+@utility note-edge {
+  border-left: 2px solid var(--color-primary);
+}
+
+@utility footnote-mark {
+  color: var(--color-primary);
+  font-size: var(--text-body);
+}
+
+@utility footnote-copy {
+  margin: 0;
+  color: var(--color-muted);
+  font-size: var(--text-label);
+  line-height: 1.65;
+}
+
+@utility dialog-panel {
+  width: min(420px, 100%);
+}
+
+@utility dialog-title {
+  margin: 0;
+  color: var(--color-ink);
+  font-size: 18px;
+  font-weight: 700;
+}
+
+@utility dialog-copy {
+  margin: 10px 0 23px;
+  color: var(--color-muted);
+  font-size: var(--text-value);
+  line-height: 1.65;
+}
+
+@utility dialog-actions {
+  display: flex;
+  justify-content: end;
+  gap: 9px;
+}
+
+@utility dialog-button {
+  min-height: 37px;
+  padding-inline: 13px;
+  font-size: var(--text-ui);
+  font-weight: 600;
+}

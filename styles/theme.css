@@ -185,3 +185,8 @@
     width: calc(100% - 2 * var(--spacing-gutter-phone));
   }
 }
+
+/* privacy-profile-generator: quiet clay wash for a text-button hover. */
+@theme {
+  --color-clay-soft: #f5e8e1;
+}

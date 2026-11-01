@@ -24,6 +24,7 @@
 | 浅绿悬停 | `bg-primary-soft-hover` | `color-primary-soft-hover` |
 | 弱正向边框 | `border-primary-muted` | `color-primary-muted` |
 | 陶土，数据与危险按钮填充 | `bg-clay` `text-clay` | `color-clay` |
+| 陶土悬停底 | `bg-clay-soft` | `color-clay-soft` |
 | 黄铜，小面积提示 | `text-brass` | `color-brass` |
 | 深底上的浅黄铜 | `text-brass-soft` | `color-brass-soft` |
 | 面板边框 | `border-line` | `color-line` |
