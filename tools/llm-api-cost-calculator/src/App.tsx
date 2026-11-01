@@ -68,8 +68,12 @@ export function App() {
         ? '已保存'
         : loadStatus === 'unavailable' ? '无法保存' : ''
   const saveStatusError = saveStatus === 'failed' || (saveStatus === 'idle' && loadStatus === 'unavailable')
-  const saveStatusClass = ['save-status', saveStatusError && 'status-error', saveStatus === 'saving' && 'status-saving']
-    .filter(Boolean).join(' ')
+  const saveDotClass = saveStatus === 'saving'
+    ? 'size-2 shrink-0 rounded-full bg-brass status-halo-brass max-phone:size-1.5'
+    : saveStatusError
+      ? 'size-2 shrink-0 rounded-full bg-clay status-halo-warn max-phone:size-1.5'
+      : 'size-2 shrink-0 rounded-full bg-primary status-halo max-phone:size-1.5'
+  const rateColor = rateStatus === 'cached' ? 'text-brass' : rateStatus === 'unavailable' ? 'text-danger' : 'text-quiet'
 
   function priceInputValue(field: PriceField): string {
     const draft = priceInputDrafts[activeId]?.[field]
@@ -133,18 +137,25 @@ export function App() {
     onBlur: () => finishPriceEdit(field),
   })
 
+  const currencyButtonClass = 'min-w-control cursor-pointer rounded-badge border-0 bg-transparent px-1.5 py-1.5 font-mono text-micro text-muted aria-pressed:bg-primary-deep aria-pressed:text-surface disabled:cursor-not-allowed disabled:text-quiet'
+
   return (
-    <div className="app-shell">
-      <header className="topbar">
-        <a className="brand" href="#top" aria-label="Token Cost 首页">
-          <span className="brand-mark" aria-hidden="true"><i /><i /><i /></span>
-          <span className="brand-name">token<span>cost</span></span>
+    <div className="min-h-screen">
+      <header className="page-inset flex h-header items-center justify-between border-b border-line bg-surface/90 max-phone:h-header-phone">
+        <a className="inline-flex items-center gap-2.5 text-ink no-underline max-phone:gap-2" href="#top" aria-label="Token Cost 首页">
+          <span className="flex size-gutter items-end gap-1 rounded-control bg-primary-deep p-1" aria-hidden="true">
+            <i className="block h-2 w-1 rounded-full bg-surface opacity-70" />
+            <i className="block h-3 w-1 rounded-full bg-surface" />
+            <i className="block h-2 w-1 rounded-full bg-surface opacity-85" />
+          </span>
+          <span className="text-brand">token<span className="text-primary">cost</span></span>
         </a>
-        <div className="topbar-tools">
-          <a className="catalog-link" href="../../">所有工具</a>
-          <div className="currency-switch" role="group" aria-label="金额显示币种">
-            <button type="button" aria-pressed={currency === 'CNY'} onClick={() => selectCurrency('CNY')}>CNY</button>
+        <div className="flex items-center gap-section max-stack:gap-3 max-phone:gap-2">
+          <a className="text-label font-semibold whitespace-nowrap text-primary-deep no-underline hover:text-primary hover:underline" href="../../">所有工具</a>
+          <div className="inline-flex gap-0 rounded-control border border-line bg-surface-alt p-1" role="group" aria-label="金额显示币种">
+            <button className={currencyButtonClass} type="button" aria-pressed={currency === 'CNY'} onClick={() => selectCurrency('CNY')}>CNY</button>
             <button
+              className={currencyButtonClass}
               type="button"
               aria-pressed={currency === 'USD'}
               disabled={!canDisplayUsd}
@@ -153,25 +164,25 @@ export function App() {
             >USD</button>
           </div>
           {saveStatusText && (
-            <div className={saveStatusClass} aria-live="polite">
-              <span className="save-dot" />
+            <div className="inline-flex items-center gap-2 text-label text-muted max-phone:gap-1.5 max-phone:text-micro" aria-live="polite">
+              <span className={saveDotClass} />
               <span>{saveStatusText}</span>
             </div>
           )}
         </div>
       </header>
 
-      <main id="top" className="main-content">
-        <section className="page-intro" aria-labelledby="page-title">
-          <div className="rate-status-row">
+      <main id="top" className="content-frame">
+        <section className="relative mb-gutter flex items-end justify-between gap-control max-stack:mb-5 max-stack:flex-col max-stack:items-start max-stack:gap-3.5 max-phone:mb-section max-phone:gap-2.5" aria-labelledby="page-title">
+          <div className="absolute -top-section right-0 z-10 flex w-full max-w-summary items-center justify-end gap-2">
             <span
-              className={`rate-status rate-${rateStatus}`}
+              className={`min-w-0 overflow-hidden text-right text-micro text-ellipsis whitespace-nowrap ${rateColor}`}
               role="status"
               aria-label={exchangeRateLabel}
               title={exchangeRateLabel}
             >{exchangeRateSummary}</span>
             <button
-              className="rate-refresh"
+              className="shrink-0 cursor-pointer rounded-control border border-line bg-surface px-2 py-1 text-micro text-primary-deep hover:border-primary-muted hover:bg-surface-alt disabled:cursor-wait disabled:bg-surface-alt disabled:text-quiet"
               type="button"
               disabled={rateStatus === 'loading'}
               aria-label={rateStatus === 'loading' ? '正在刷新 USD/CNY 参考汇率' : '刷新 USD/CNY 参考汇率'}
@@ -179,17 +190,17 @@ export function App() {
             >{rateStatus === 'loading' ? '更新中' : '刷新汇率'}</button>
           </div>
           <div>
-            <p className="eyebrow">LLM API · 调用成本</p>
-            <h1 id="page-title">LLM API <em>成本计算器</em></h1>
+            <p className="m-0 mb-2 font-mono text-meta tracking-eyebrow text-muted max-phone:text-micro">LLM API · 调用成本</p>
+            <h1 id="page-title" className="m-0 text-display text-ink max-phone:text-display-phone">LLM API <em className="text-primary not-italic whitespace-nowrap">成本计算器</em></h1>
           </div>
-          <p className="intro-copy">维护价格方案，估算不同请求用量下的成本。</p>
+          <p className="m-0 mb-1 max-w-summary text-ui text-muted max-stack:mb-0 max-phone:text-label">维护价格方案，估算不同请求用量下的成本。</p>
         </section>
 
         {saveNotice && (
-          <div className="storage-notice" role="status">
-            <span className="notice-icon" aria-hidden="true">i</span>
-            <p>{saveNotice}</p>
-            <button type="button" aria-label="关闭提示" onClick={() => setSaveNotice('')}>×</button>
+          <div className="-mt-1 mb-4 flex items-start gap-2.5 rounded-inset border border-warn-line bg-warn-bg px-3.5 py-3 text-label text-warn max-phone:mb-3 max-phone:px-2.5 max-phone:py-2.5 max-phone:text-meta" role="status">
+            <span className="mt-px inline-flex size-4 shrink-0 items-center justify-center rounded-full bg-brass text-ui font-bold text-on-deep" aria-hidden="true">i</span>
+            <p className="m-0 flex-1">{saveNotice}</p>
+            <button className="-mt-1 -mr-1 size-panel cursor-pointer border-0 bg-transparent text-symbol text-warn" type="button" aria-label="关闭提示" onClick={() => setSaveNotice('')}>×</button>
           </div>
         )}
 
@@ -205,24 +216,24 @@ export function App() {
         />
 
         <section className="workbench-grid" aria-label="当前方案参数与成本">
-          <section className="parameter-panel surface" aria-labelledby="parameters-title">
-            <div className="panel-heading">
+          <section className="min-w-0 rounded-panel border border-line bg-surface px-panel pb-5 pt-panel shadow-panel max-phone:px-4 max-phone:pb-4 max-phone:pt-5" aria-labelledby="parameters-title">
+            <div className="flex items-center justify-between gap-4">
               <div>
-                <p className="eyebrow">当前方案</p>
-                <h2 id="parameters-title">调用参数</h2>
+                <p className="m-0 mb-1 font-mono text-meta tracking-eyebrow text-muted">当前方案</p>
+                <h2 id="parameters-title" className="m-0 text-section">调用参数</h2>
               </div>
             </div>
 
-            <label className="scenario-name-label" htmlFor="scenario-name">方案名称</label>
+            <label className="mt-5 mb-1.5 block text-label text-muted max-phone:mt-4" htmlFor="scenario-name">方案名称</label>
             <input
               id="scenario-name"
-              className="scenario-name-input"
+              className="name-field min-h-control rounded-control border border-line bg-surface px-2.5 text-value font-bold text-ink focus:border-primary focus:shadow-focus focus:outline-none"
               value={activeScenario.name}
               maxLength={32}
               onChange={(event) => dispatch({ type: 'setName', value: event.target.value })}
             />
 
-            <div className="parameter-list">
+            <div className="mt-5 grid grid-cols-2 gap-x-5 gap-y-section max-phone:mt-section max-phone:grid-cols-1 max-phone:gap-3.5">
               <ParameterField
                 id="input-tokens"
                 label="输入 Token"
@@ -253,14 +264,14 @@ export function App() {
               />
             </div>
 
-            <div className="price-section">
-              <div className="price-heading">
+            <div className="mt-panel border-t border-line-soft pt-5 max-phone:mt-5 max-phone:pt-4">
+              <div className="mb-4 flex items-center justify-between gap-4 max-phone:flex-col max-phone:items-start max-phone:gap-2.5">
                 <div>
-                  <p className="eyebrow">单价 / 百万 Token</p>
-                  <h3>模型单价</h3>
+                  <p className="m-0 mb-1 font-mono text-meta tracking-eyebrow text-muted">单价 / 百万 Token</p>
+                  <h3 className="m-0 text-heading">模型单价</h3>
                 </div>
-                <div className="price-meta">
-                  <span className="price-unit-label">{currencyUnit}</span>
+                <div className="grid justify-items-end gap-1 max-phone:w-full max-phone:justify-items-start">
+                  <span className="font-mono text-meta text-muted">{currencyUnit}</span>
                 </div>
               </div>
               <ModelCatalogPicker
@@ -269,12 +280,12 @@ export function App() {
                 onSelect={selectCatalogPrice}
                 onClear={() => dispatch({ type: 'unlink' })}
               />
-              <div className="price-fields">
-                <ParameterField id="cached-price" label="缓存输入" {...priceFieldProps('cachedPrice')} />
-                <ParameterField id="uncached-price" label="未缓存输入" {...priceFieldProps('uncachedPrice')} />
-                <ParameterField id="output-price" label="输出" {...priceFieldProps('outputPrice')} />
+              <div className="grid grid-cols-3 gap-3 max-phone:grid-cols-1 max-phone:gap-3">
+                <ParameterField id="cached-price" label="缓存输入" compact {...priceFieldProps('cachedPrice')} />
+                <ParameterField id="uncached-price" label="未缓存输入" compact {...priceFieldProps('uncachedPrice')} />
+                <ParameterField id="output-price" label="输出" compact {...priceFieldProps('outputPrice')} />
               </div>
-              <p className="parameter-note">切换币种会按页面显示的参考汇率换算单价、成本和图表。</p>
+              <p className="m-0 mt-3 text-meta text-quiet">切换币种会按页面显示的参考汇率换算单价、成本和图表。</p>
             </div>
           </section>
 

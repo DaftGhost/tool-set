@@ -1,0 +1,211 @@
+@layer theme, base, components, utilities;
+
+@import "tailwindcss/theme.css" layer(theme);
+@import "tailwindcss/utilities.css" layer(utilities) source(none);
+
+@source ".";
+
+@import "../../../styles/theme.css";
+@import "../../../styles/base.css";
+@import "./chart.css";
+
+@utility content-frame {
+  width: min(100% - 2 * var(--spacing-gutter), var(--container-page));
+  margin-inline: auto;
+  padding-top: var(--spacing-block);
+  padding-bottom: var(--spacing-footer);
+
+  @media (width < theme(--breakpoint-stack)) {
+    width: min(100% - 2 * var(--spacing-gutter-stack), 740px);
+    padding-top: 36px;
+  }
+
+  @media (width < theme(--breakpoint-phone)) {
+    width: calc(100% - 2 * var(--spacing-gutter-phone));
+    padding-top: var(--spacing-gutter);
+    padding-bottom: var(--spacing-block);
+  }
+}
+
+@utility workbench-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.12fr) minmax(360px, 0.88fr);
+  align-items: stretch;
+  gap: var(--spacing-section);
+
+  @media (width < theme(--breakpoint-stack)) {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  @media (width < theme(--breakpoint-phone)) {
+    gap: var(--spacing-3);
+  }
+}
+
+@utility scenario-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 230px), 1fr));
+  gap: var(--spacing-2\.5);
+
+  @media (width < theme(--breakpoint-phone)) {
+    grid-template-columns: minmax(0, 1fr);
+    gap: var(--spacing-2);
+  }
+}
+
+@utility stepper {
+  display: grid;
+  grid-template-columns: 39px minmax(48px, 1fr) 39px;
+  gap: var(--spacing-1\.5);
+
+  &:not(:has(button)) {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  & > button,
+  & > input {
+    width: 100%;
+    height: 42px;
+  }
+
+  & > button {
+    font-size: var(--text-symbol);
+    line-height: 1;
+    font-weight: 500;
+  }
+
+  & > input {
+    font-size: var(--text-value);
+  }
+
+  @media (width < theme(--breakpoint-phone)) {
+    grid-template-columns: 42px minmax(60px, 1fr) 42px;
+    gap: var(--spacing-2);
+
+    &:not(:has(button)) {
+      grid-template-columns: minmax(0, 1fr);
+    }
+
+    & > button,
+    & > input {
+      height: 44px;
+    }
+  }
+}
+
+@utility stepper-compact {
+  display: grid;
+  grid-template-columns: 31px minmax(40px, 1fr) 31px;
+  gap: var(--spacing-1);
+
+  &:not(:has(button)) {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  & > button,
+  & > input {
+    width: 100%;
+    height: 38px;
+  }
+
+  & > button {
+    font-size: var(--text-section);
+    line-height: 1;
+    font-weight: 500;
+  }
+
+  & > input {
+    font-size: var(--text-label);
+  }
+
+  @media (width < theme(--breakpoint-phone)) {
+    grid-template-columns: 40px minmax(60px, 1fr) 40px;
+    gap: var(--spacing-2);
+
+    &:not(:has(button)) {
+      grid-template-columns: minmax(0, 1fr);
+    }
+
+    & > button,
+    & > input {
+      height: 42px;
+    }
+
+    & > button {
+      font-size: var(--text-title);
+    }
+
+    & > input {
+      font-size: var(--text-ui);
+    }
+  }
+}
+
+@utility name-field {
+  width: min(100%, 300px);
+
+  @media (width < theme(--breakpoint-phone)) {
+    width: 100%;
+  }
+}
+
+@utility menu-scroll {
+  max-height: 240px;
+}
+
+@utility option-row {
+  border: 0;
+  border-bottom: 1px solid var(--color-line-soft);
+
+  &:last-child {
+    border-bottom: 0;
+  }
+}
+
+@utility option-selected {
+  box-shadow: inset 2px 0 0 var(--color-primary);
+}
+
+@utility status-halo {
+  box-shadow: 0 0 0 3px var(--color-primary-soft);
+}
+
+@utility status-halo-brass {
+  box-shadow: 0 0 0 3px var(--color-brass-soft);
+}
+
+@utility status-halo-warn {
+  box-shadow: 0 0 0 3px var(--color-warn-bg);
+}
+
+@utility total-block {
+  min-height: 103px;
+
+  @media (width < theme(--breakpoint-phone)) {
+    min-height: 82px;
+  }
+}
+
+@utility total-figure {
+  font-family: var(--font-mono);
+  font-size: var(--text-figure);
+  font-weight: var(--text-figure--font-weight);
+  line-height: var(--text-figure--line-height);
+  letter-spacing: var(--text-figure--letter-spacing);
+
+  @media (width < theme(--breakpoint-phone)) {
+    font-size: clamp(22px, 7vw, 28px);
+  }
+}
+
+@utility scrub-readout {
+  min-width: 57px;
+}
+
+@utility chart-placeholder {
+  min-height: 235px;
+}
+
+@utility summary-placeholder {
+  min-height: 230px;
+}
