@@ -1,3 +1,4 @@
+import tailwindcss from '@tailwindcss/vite'
 import react from '@vitejs/plugin-react'
 import { defineConfig, type Plugin } from 'vite'
 
@@ -19,7 +20,7 @@ export default defineConfig({
   root: 'catalog',
   base: './',
   publicDir: '../site',
-  plugins: [react(), serveToolDirectoryIndexes()],
+  plugins: [tailwindcss(), react(), serveToolDirectoryIndexes()],
   build: {
     outDir: 'dist',
     emptyOutDir: true,
