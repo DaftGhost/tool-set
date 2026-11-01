@@ -1,0 +1,90 @@
+.chart-grid line {
+  stroke: var(--color-line-soft);
+  stroke-width: 1;
+}
+
+.chart-grid .vertical-grid {
+  stroke-dasharray: 2 5;
+  opacity: 0.7;
+}
+
+.chart-grid text {
+  fill: var(--color-muted);
+  font-family: var(--font-mono);
+  font-size: var(--text-label);
+}
+
+.chart-axis line {
+  stroke: var(--color-quiet);
+  stroke-width: 1.2;
+}
+
+.plot-hit-area {
+  fill: transparent;
+  cursor: crosshair;
+  pointer-events: all;
+}
+
+.cursor-line {
+  stroke: var(--color-quiet);
+  stroke-dasharray: 4 5;
+  stroke-width: 1.25;
+  pointer-events: none;
+}
+
+.chart-series {
+  pointer-events: none;
+}
+
+.chart-series line {
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-width: 3.5;
+}
+
+.chart-series circle {
+  fill: var(--color-surface);
+  stroke: currentColor;
+  stroke-width: 3;
+}
+
+.intersection-marker {
+  cursor: pointer;
+}
+
+.marker-halo {
+  fill: var(--color-surface);
+  stroke: var(--color-ink);
+  stroke-width: 1.5;
+}
+
+.marker-core {
+  fill: var(--color-ink);
+  stroke: var(--color-surface);
+  stroke-width: 2;
+}
+
+.intersection-marker.is-selected .marker-halo,
+.intersection-marker:focus .marker-halo {
+  fill: var(--color-primary-soft);
+  stroke: var(--color-primary);
+  stroke-width: 2.5;
+}
+
+.intersection-marker:focus {
+  outline: none;
+}
+
+@media (width < theme(--breakpoint-phone)) {
+  .cost-chart {
+    min-height: 190px;
+  }
+
+  .chart-grid text {
+    font-size: var(--text-meta);
+  }
+
+  .chart-series line {
+    stroke-width: 3;
+  }
+}

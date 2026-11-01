@@ -6,6 +6,7 @@ import { formatMoney } from '../domain/currency'
 import type { CurrencyCode } from '../domain/currency'
 import { axisLabel, buildChartModel, inputAtAxis, metricLabel } from '../domain/chart'
 import type { ChartAxis, ChartEntry, CostMetric } from '../domain/chart'
+import { scenarioColor, scenarioSwatchClass } from '../scenarioSwatch'
 
 type CostChartProps = {
   entries: Array<ChartEntry & { colorIndex: number }>
@@ -36,6 +37,12 @@ const METRIC_OPTIONS = [
 ] as const
 const X_FRACTIONS = [0, 0.25, 0.5, 0.75, 1]
 
+function segmentClass(pressed: boolean): string {
+  return pressed
+    ? 'cursor-pointer rounded-control border border-primary bg-primary-soft px-2.5 py-2 text-meta text-primary-deep transition-colors max-phone:px-2 max-phone:py-1.5 max-phone:text-micro'
+    : 'cursor-pointer rounded-control border border-line bg-surface px-2.5 py-2 text-meta text-muted transition-colors hover:border-primary-muted max-phone:px-2 max-phone:py-1.5 max-phone:text-micro'
+}
+
 export function CostChart({
   entries,
   axis,
@@ -59,7 +66,7 @@ export function CostChart({
   const xFor = (fraction: number) => plot.left + fraction * plotWidth
   const yFor = (value: number) => plot.bottom - value / model.yMaximum * plotHeight
   const colorIndexFor = (id: string) => entries.find(({ id: entryId }) => entryId === id)?.colorIndex ?? 0
-  const lineColor = (id: string) => `var(--scenario-${colorIndexFor(id) % 16})`
+  const lineColor = (id: string) => scenarioColor(colorIndexFor(id))
   const money = (value: number, maximumFractionDigits = 6) => formatMoney(value, currency, usdToCny, maximumFractionDigits)
 
   function updateFromPointer(event: ReactPointerEvent<Element>) {
@@ -92,28 +99,32 @@ export function CostChart({
   const crossingAxisName = axis === 'cacheHitPercent' ? '缓存命中率' : axis === 'inputTokensM' ? '输入 Token' : '输出 / 输入比'
 
   return (
-    <section className="chart-panel" aria-labelledby="chart-title">
-      <div className="section-heading chart-heading">
+    <section className="mt-section rounded-panel border border-line bg-surface px-panel pb-panel pt-panel shadow-panel max-phone:mt-3 max-phone:px-3.5 max-phone:pb-4 max-phone:pt-5" aria-labelledby="chart-title">
+      <div className="mb-5 flex items-end justify-between gap-4 max-phone:mb-4 max-phone:flex-col max-phone:items-start max-phone:gap-3">
         <div>
-          <p className="eyebrow">方案分析</p>
-          <h2 id="chart-title">成本变化</h2>
-          <p className="section-hint">比较请求用量变化时的成本；点选交点查看对应参数。</p>
+          <p className="m-0 mb-2 font-mono text-meta tracking-eyebrow text-muted">方案分析</p>
+          <h2 id="chart-title" className="m-0 text-title">成本变化</h2>
+          <p className="m-0 mt-1.5 text-label text-muted max-phone:text-meta">比较请求用量变化时的成本；点选交点查看对应参数。</p>
         </div>
         {cheapestAtCursor && (
-          <div className="cursor-estimate">
+          <div className="flex flex-col items-end gap-1.5 whitespace-nowrap text-meta text-quiet max-phone:items-start max-phone:gap-1">
             <span>当前 {axisLabel(axis, model.cursorValue)}</span>
-            <strong><i className={`scenario-swatch swatch-${colorIndexFor(cheapestAtCursor.id) % 16}`} />{cheapestAtCursor.name} 更省</strong>
+            <strong className="flex items-center gap-1.5 text-label font-bold text-ink">
+              <i className={`inline-flex size-2 shrink-0 rounded-full ${scenarioSwatchClass(colorIndexFor(cheapestAtCursor.id))}`} />
+              {cheapestAtCursor.name} 更省
+            </strong>
           </div>
         )}
       </div>
 
-      <div className="chart-options">
-        <div className="control-group">
-          <span className="control-label">横轴参数</span>
-          <div className="segmented-control" role="group" aria-label="横轴参数">
+      <div className="mb-4 flex flex-wrap items-end gap-x-gutter gap-y-5 rounded-inset border border-line-soft bg-surface-alt px-4 py-3.5 max-phone:grid max-phone:gap-3.5 max-phone:px-2.5 max-phone:py-3">
+        <div className="grid gap-2 max-phone:gap-1.5">
+          <span className="text-meta font-bold text-muted">横轴参数</span>
+          <div className="flex flex-wrap gap-1.5 max-phone:gap-1" role="group" aria-label="横轴参数">
             {AXIS_OPTIONS.map((option) => (
               <button
                 key={option.value}
+                className={segmentClass(axis === option.value)}
                 type="button"
                 aria-pressed={axis === option.value}
                 onClick={() => onAxisChange(option.value)}
@@ -123,12 +134,13 @@ export function CostChart({
             ))}
           </div>
         </div>
-        <div className="control-group">
-          <span className="control-label">纵轴成本</span>
-          <div className="segmented-control compact-control" role="group" aria-label="纵轴成本">
+        <div className="grid gap-2 max-phone:gap-1.5">
+          <span className="text-meta font-bold text-muted">纵轴成本</span>
+          <div className="flex flex-wrap gap-1.5 max-phone:gap-1" role="group" aria-label="纵轴成本">
             {METRIC_OPTIONS.map((option) => (
               <button
                 key={option.value}
+                className={segmentClass(metric === option.value)}
                 type="button"
                 aria-pressed={metric === option.value}
                 onClick={() => onMetricChange(option.value)}
@@ -141,10 +153,10 @@ export function CostChart({
       </div>
 
       {entries.length > 0 ? (
-        <div className="chart-frame">
+        <div className="px-1 max-phone:-mx-1">
           <svg
             ref={svgRef}
-            className="cost-chart"
+            className="cost-chart h-auto w-full overflow-visible touch-manipulation"
             viewBox="0 0 920 430"
             role="group"
             aria-label={`${metricLabel(metric)}随${axisName}变化的对比图`}
@@ -213,9 +225,10 @@ export function CostChart({
               <line x1={plot.left} x2={plot.right} y1={plot.bottom} y2={plot.bottom} />
             </g>
           </svg>
-          <label className="chart-scrubber">
-            <span>拖动查看</span>
+          <label className="mx-1 mt-1.5 flex items-center gap-3 text-meta text-muted max-phone:mx-0 max-phone:gap-1.5 max-phone:text-micro">
+            <span className="shrink-0">拖动查看</span>
             <input
+              className="min-w-0 flex-1 accent-primary"
               type="range"
               min="0"
               max="1000"
@@ -224,73 +237,82 @@ export function CostChart({
               aria-label={`图表横轴位置，当前 ${axisLabel(axis, model.cursorValue)}`}
               onChange={(event) => onCursorFractionChange(Number(event.target.value) / 1000)}
             />
-            <output>{axisLabel(axis, model.cursorValue)}</output>
+            <output className="scrub-readout shrink-0 text-right font-mono text-primary-deep">{axisLabel(axis, model.cursorValue)}</output>
           </label>
-          <div className="chart-legend" aria-label="方案图例">
+          <div className="mx-1.5 mt-3.5 mb-1 flex flex-wrap gap-x-5 gap-y-2.5 rounded-control bg-surface-alt px-3.5 py-3 max-phone:mx-1 max-phone:gap-x-3.5 max-phone:gap-y-2 max-phone:p-2.5" aria-label="方案图例">
             {model.lines.map((line) => (
-              <span key={line.id}>
-                <i className={`scenario-swatch swatch-${colorIndexFor(line.id) % 16}`} />
-                {' '}{line.name} <strong>{money(line.cursorCost)}</strong>
+              <span key={line.id} className="inline-flex items-center gap-1.5 text-meta text-ink max-phone:gap-1 max-phone:text-micro">
+                <i className={`inline-flex size-2 shrink-0 rounded-full ${scenarioSwatchClass(colorIndexFor(line.id))}`} />
+                {line.name} <strong className="font-mono text-meta font-medium text-ink max-phone:text-micro">{money(line.cursorCost)}</strong>
               </span>
             ))}
           </div>
         </div>
       ) : (
-        <div className="chart-empty" role="status">
-          <span>—</span>
-          <p>添加并完善至少一个有效方案，成本曲线会显示在这里。</p>
+        <div className="chart-placeholder flex flex-col items-center justify-center gap-3 text-center text-muted" role="status">
+          <span className="flex size-control items-center justify-center rounded-inset border border-dashed border-quiet text-symbol text-muted">—</span>
+          <p className="m-0 max-w-summary text-ui">添加并完善至少一个有效方案，成本曲线会显示在这里。</p>
         </div>
       )}
 
       {entries.length > 0 && model.intersections.length > 0 ? (
-        <div className="intersection-section">
-          <div className="intersection-heading">
+        <div className="mt-panel border-t border-line-soft pt-5">
+          <div className="flex items-center justify-between gap-3">
             <div>
-              <p className="eyebrow">方案交点</p>
-              <h3>成本交叉点</h3>
+              <p className="m-0 mb-1 font-mono text-meta tracking-eyebrow text-muted">方案交点</p>
+              <h3 className="m-0 text-heading">成本交叉点</h3>
             </div>
-            <span className="intersection-count">{model.intersections.length} 个</span>
+            <span className="rounded-badge bg-surface-alt px-1.5 py-1 font-mono text-micro text-muted">{model.intersections.length} 个</span>
           </div>
-          <div className="intersection-picker" role="group" aria-label="选择成本交叉点">
+          <div className="mt-3.5 flex flex-wrap gap-2" role="group" aria-label="选择成本交叉点">
             {model.intersections.map((intersection) => (
               <button
                 key={intersection.key}
+                className={selectedKey === intersection.key
+                  ? 'inline-flex min-h-control cursor-pointer items-center gap-2 rounded-control border border-primary bg-primary-soft px-2.5 text-meta text-primary-deep'
+                  : 'inline-flex min-h-control cursor-pointer items-center gap-2 rounded-control border border-line bg-surface px-2.5 text-meta text-ink'}
                 type="button"
                 aria-pressed={selectedKey === intersection.key}
                 onClick={() => onSelectIntersection(intersection.key)}
               >
                 <span>{intersection.firstName} × {intersection.secondName}</span>
-                <strong>{axisLabel(axis, intersection.axisValue)}</strong>
-                <small>{money(intersection.cost)}</small>
+                <strong className="font-mono text-meta font-medium">{axisLabel(axis, intersection.axisValue)}</strong>
+                <small className="font-mono text-micro text-muted">{money(intersection.cost)}</small>
               </button>
             ))}
           </div>
-          {!visibleIntersection && <p className="intersection-prompt">点选图上的交点，查看该参数下的方案明细。</p>}
+          {!visibleIntersection && <p className="m-0 mt-3.5 text-label text-muted">点选图上的交点，查看该参数下的方案明细。</p>}
           {visibleIntersection && (
             <>
-              <div className="crossing-summary">
-                <div>
-                  <span>{crossingAxisName}</span>
-                  <strong>{axisLabel(axis, visibleIntersection.axisValue)}</strong>
+              <div className="mt-3 flex flex-wrap gap-x-control gap-y-section rounded-control bg-surface-alt px-4 py-3.5 max-phone:gap-x-5 max-phone:gap-y-3 max-phone:p-2.5">
+                <div className="grid gap-1">
+                  <span className="text-micro text-muted">{crossingAxisName}</span>
+                  <strong className="font-mono text-value font-medium text-primary-deep max-phone:text-label">{axisLabel(axis, visibleIntersection.axisValue)}</strong>
                 </div>
-                <div>
-                  <span>{visibleIntersection.firstName} 与 {visibleIntersection.secondName}</span>
-                  <strong>{money(visibleIntersection.cost)} · {metricLabel(metric)}</strong>
+                <div className="grid gap-1">
+                  <span className="text-micro text-muted">{visibleIntersection.firstName} 与 {visibleIntersection.secondName}</span>
+                  <strong className="font-mono text-value font-medium text-primary-deep max-phone:text-label">{money(visibleIntersection.cost)} · {metricLabel(metric)}</strong>
                 </div>
               </div>
-              <div className="crossing-table-wrap">
-                <table className="crossing-table">
+              <div className="mt-3 overflow-x-auto">
+                <table className="w-full border-collapse whitespace-nowrap text-left">
                   <thead>
-                    <tr><th>方案</th><th>输入</th><th>缓存命中</th><th>输出比</th><th>总成本</th></tr>
+                    <tr>
+                      <th className="border-b border-line px-2.5 py-2 text-micro font-semibold text-muted max-phone:px-1.5 max-phone:py-2">方案</th>
+                      <th className="border-b border-line px-2.5 py-2 text-micro font-semibold text-muted max-phone:px-1.5 max-phone:py-2">输入</th>
+                      <th className="border-b border-line px-2.5 py-2 text-micro font-semibold text-muted max-phone:px-1.5 max-phone:py-2">缓存命中</th>
+                      <th className="border-b border-line px-2.5 py-2 text-micro font-semibold text-muted max-phone:px-1.5 max-phone:py-2">输出比</th>
+                      <th className="border-b border-line px-2.5 py-2 text-micro font-semibold text-muted max-phone:px-1.5 max-phone:py-2">总成本</th>
+                    </tr>
                   </thead>
                   <tbody>
                     {intersectionRows.map((entry) => (
                       <tr key={entry.id}>
-                        <td><i className={`scenario-swatch swatch-${entry.colorIndex % 16}`} />{entry.name}</td>
-                        <td>{formatNumber((entry.cost?.inputTokens ?? 0) / 1_000_000)}M</td>
-                        <td>{formatNumber((entry.cost?.cachedTokens ?? 0) / Math.max(entry.cost?.inputTokens ?? 1, 1) * 100, 4)}%</td>
-                        <td>{formatNumber((entry.cost?.outputTokens ?? 0) / Math.max(entry.cost?.inputTokens ?? 1, 1) * 100, 3)}%</td>
-                        <td>{entry.cost ? money(entry.cost.totalCost) : '—'}</td>
+                        <td className="border-b border-line-soft px-2.5 py-2.5 text-meta font-bold text-ink max-phone:px-1.5 max-phone:py-2"><i className={`mr-1.5 inline-flex size-1.5 shrink-0 rounded-full align-middle ${scenarioSwatchClass(entry.colorIndex)}`} />{entry.name}</td>
+                        <td className="border-b border-line-soft px-2.5 py-2.5 font-mono text-meta text-ink max-phone:px-1.5 max-phone:py-2">{formatNumber((entry.cost?.inputTokens ?? 0) / 1_000_000)}M</td>
+                        <td className="border-b border-line-soft px-2.5 py-2.5 font-mono text-meta text-ink max-phone:px-1.5 max-phone:py-2">{formatNumber((entry.cost?.cachedTokens ?? 0) / Math.max(entry.cost?.inputTokens ?? 1, 1) * 100, 4)}%</td>
+                        <td className="border-b border-line-soft px-2.5 py-2.5 font-mono text-meta text-ink max-phone:px-1.5 max-phone:py-2">{formatNumber((entry.cost?.outputTokens ?? 0) / Math.max(entry.cost?.inputTokens ?? 1, 1) * 100, 3)}%</td>
+                        <td className="border-b border-line-soft px-2.5 py-2.5 font-mono text-meta text-ink max-phone:px-1.5 max-phone:py-2">{entry.cost ? money(entry.cost.totalCost) : '—'}</td>
                       </tr>
                     ))}
                   </tbody>
@@ -300,7 +322,7 @@ export function CostChart({
           )}
         </div>
       ) : (
-        entries.length > 0 && <p className="no-crossing">当前方案在这个参数范围内没有成本交叉点。</p>
+        entries.length > 0 && <p className="m-0 mt-3.5 text-label text-muted">当前方案在这个参数范围内没有成本交叉点。</p>
       )}
     </section>
   )

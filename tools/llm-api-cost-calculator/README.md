@@ -36,7 +36,7 @@
 
 ## 技术栈与目录
 
-- TypeScript、React 19、Vite；页面样式为原生 CSS，图表为原生 SVG。
+- TypeScript、React 19、Vite、Tailwind CSS 4；图表为原生 SVG，曲线样式在 `src/chart.css` 里使用主题变量。
 - 纯计算模块不访问浏览器或网络；外部汇率响应和本地存档分别由 `services/` 与 `storage/` 边界校验。
 - `src/domain/`：计算、方案约定和图表曲线。
 - `src/services/`：获取并校验外部 USD/CNY 汇率和 models.dev 模型目录。
