@@ -68,7 +68,7 @@
 
 ## 布局
 
-页面内容用 `page-frame`，最大宽度是 `max-w-page`（`container-page`）。顶栏左右留白用 `page-inset`。工具卡片里的说明最多 `max-w-summary`（`container-summary`）。
+页面内容用 `page-frame`，最大宽度是 `max-w-page`（`container-page`）。顶栏左右留白用 `page-inset`。工具卡片里的说明最多 `max-w-summary`（`container-summary`）。资料页的本机记录栏用 `container-aside`。
 
 桌面规则不写断点前缀。`max-stack:`（`breakpoint-stack`）把主要区域改成单列。`max-phone:`（`breakpoint-phone`）把表单和卡片内边距再收成纵向。两个变体同时命中时，`max-phone:` 胜出。
 

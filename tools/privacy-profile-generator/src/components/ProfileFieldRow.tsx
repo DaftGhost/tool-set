@@ -31,12 +31,12 @@ function ValueCopy({ field, language, languageLabel, value, onCopy }: ValueCopyP
   return (
     <div className={languageLabel ? 'min-w-0' : 'flex min-w-0 items-start gap-2'}>
       <div className={languageLabel
-        ? 'copy-heading justify-between text-muted'
-        : 'copy-heading order-2 shrink-0'}>
+        ? 'flex min-h-panel items-center justify-between gap-2 text-label text-muted max-phone:text-meta'
+        : 'order-2 flex shrink-0 items-center'}>
         {languageLabel && <span>{languageLabel}</span>}
         <button
           aria-label={actionLabel}
-          className="copy-action inline-flex items-center rounded-control text-primary hover:bg-primary-soft hover:text-primary-deep"
+          className="inline-flex cursor-pointer items-center gap-1 rounded-control border-0 bg-transparent p-1 text-label text-primary transition-colors hover:bg-primary-soft hover:text-primary-deep max-phone:text-meta"
           onClick={() => onCopy(field, language, value)}
           type="button"
         >
@@ -44,7 +44,9 @@ function ValueCopy({ field, language, languageLabel, value, onCopy }: ValueCopyP
           <span>复制</span>
         </button>
       </div>
-      <p className={languageLabel ? 'field-copy field-copy-gap' : 'field-copy m-0 min-w-0 flex-1'} data-field-value>{value}</p>
+      <p className={languageLabel
+        ? 'm-0 mt-1 text-body text-ink wrap-anywhere select-text max-phone:text-value'
+        : 'm-0 min-w-0 flex-1 text-body text-ink wrap-anywhere select-text max-phone:text-value'} data-field-value>{value}</p>
     </div>
   )
 }
@@ -54,8 +56,8 @@ export function ProfileFieldRow({ field, regionId, onCopy }: ProfileFieldRowProp
   const localLabel = regionId === 'en-US' || regionId === 'en-GB' ? '英语（地区形式）' : '本地形式'
 
   return (
-    <div aria-label={field.label} className="field-row" role="group">
-      <h3 className="field-label">{field.label}</h3>
+    <div aria-label={field.label} className="flex items-start gap-4 border-b border-line-soft py-4 last:border-transparent max-phone:flex-col max-phone:gap-2 max-phone:py-3" role="group">
+      <h3 className="m-0 mt-1 w-footer shrink-0 text-ui font-bold text-muted max-phone:mt-0 max-phone:w-auto">{field.label}</h3>
       <div className={hasEnglishValue ? 'grid grid-cols-2 gap-5 max-phone:gap-3' : 'min-w-0'}>
         <ValueCopy
           field={field}
@@ -74,7 +76,7 @@ export function ProfileFieldRow({ field, regionId, onCopy }: ProfileFieldRowProp
           />
         )}
         {field.englishStatus === 'no-standard-form' && (
-          <p className="conversion-gap text-label text-muted">该字段没有适用的标准英语表达。</p>
+          <p className="m-0 mt-1 text-label text-muted">该字段没有适用的标准英语表达。</p>
         )}
       </div>
     </div>

@@ -186,7 +186,8 @@
   }
 }
 
-/* privacy-profile-generator: quiet clay wash for a text-button hover. */
+/* privacy-profile-generator */
 @theme {
   --color-clay-soft: #f5e8e1;
+  --container-aside: 276px;
 }
