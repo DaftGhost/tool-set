@@ -16,7 +16,7 @@ interface ValueCopyProps {
 
 function CopyGlyph() {
   return (
-    <svg aria-hidden="true" viewBox="0 0 16 16" width="15" height="15" fill="none">
+    <svg aria-hidden="true" className="shrink-0" viewBox="0 0 16 16" width="15" height="15" fill="none">
       <rect x="5.25" y="1.75" width="8.5" height="10.5" rx="1.5" stroke="currentColor" strokeWidth="1.5" />
       <path d="M10.5 13.75v.5a1 1 0 0 1-1 1h-7a1 1 0 0 1-1-1v-9a1 1 0 0 1 1-1H3" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
     </svg>
@@ -29,12 +29,14 @@ function ValueCopy({ field, language, languageLabel, value, onCopy }: ValueCopyP
     : `复制${field.label}`
 
   return (
-    <div className={languageLabel ? 'value-copy' : 'value-copy value-copy--single'}>
-      <div className="value-copy__heading">
+    <div className={languageLabel ? 'min-w-0' : 'flex min-w-0 items-start gap-2'}>
+      <div className={languageLabel
+        ? 'flex min-h-panel items-center justify-between gap-2 text-label text-muted max-phone:text-meta'
+        : 'order-2 flex shrink-0 items-center'}>
         {languageLabel && <span>{languageLabel}</span>}
         <button
           aria-label={actionLabel}
-          className="copy-button"
+          className="inline-flex cursor-pointer items-center gap-1 rounded-control border-0 bg-transparent p-1 text-label text-primary transition-colors hover:bg-primary-soft hover:text-primary-deep max-phone:text-meta"
           onClick={() => onCopy(field, language, value)}
           type="button"
         >
@@ -42,7 +44,9 @@ function ValueCopy({ field, language, languageLabel, value, onCopy }: ValueCopyP
           <span>复制</span>
         </button>
       </div>
-      <p className="field-value">{value}</p>
+      <p className={languageLabel
+        ? 'm-0 mt-1 text-body text-ink wrap-anywhere select-text max-phone:text-value'
+        : 'm-0 min-w-0 flex-1 text-body text-ink wrap-anywhere select-text max-phone:text-value'} data-field-value>{value}</p>
     </div>
   )
 }
@@ -52,9 +56,9 @@ export function ProfileFieldRow({ field, regionId, onCopy }: ProfileFieldRowProp
   const localLabel = regionId === 'en-US' || regionId === 'en-GB' ? '英语（地区形式）' : '本地形式'
 
   return (
-    <div aria-label={field.label} className="profile-field" role="group">
-      <h3 className="profile-field__label">{field.label}</h3>
-      <div className={hasEnglishValue ? 'profile-field__values profile-field__values--paired' : 'profile-field__values'}>
+    <div aria-label={field.label} className="flex items-start gap-4 border-b border-line-soft py-4 last:border-transparent max-phone:flex-col max-phone:gap-2 max-phone:py-3" role="group">
+      <h3 className="m-0 mt-1 w-footer shrink-0 text-ui font-bold text-muted max-phone:mt-0 max-phone:w-auto">{field.label}</h3>
+      <div className={hasEnglishValue ? 'grid grid-cols-2 gap-5 max-phone:gap-3' : 'min-w-0'}>
         <ValueCopy
           field={field}
           language="local"
@@ -72,7 +76,7 @@ export function ProfileFieldRow({ field, regionId, onCopy }: ProfileFieldRowProp
           />
         )}
         {field.englishStatus === 'no-standard-form' && (
-          <p className="conversion-note">该字段没有适用的标准英语表达。</p>
+          <p className="m-0 mt-1 text-label text-muted">该字段没有适用的标准英语表达。</p>
         )}
       </div>
     </div>

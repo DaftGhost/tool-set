@@ -185,3 +185,9 @@
     width: calc(100% - 2 * var(--spacing-gutter-phone));
   }
 }
+
+/* privacy-profile-generator */
+@theme {
+  --color-clay-soft: #f5e8e1;
+  --container-aside: 276px;
+}

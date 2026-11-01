@@ -77,7 +77,7 @@ describe('PrivacyProfileGenerator', () => {
     for (const label of labels) {
       const group = screen.getByRole('group', { name: label })
       expect(within(group).queryByText(/本地形式|英语形式|英语（地区形式）/u)).not.toBeInTheDocument()
-      const value = group.querySelector('.field-value')!.textContent
+      const value = group.querySelector('[data-field-value]')!.textContent
       await user.click(within(group).getByRole('button', { name: `复制${label}` }))
       expect(clipboard.copy).toHaveBeenLastCalledWith(value)
     }

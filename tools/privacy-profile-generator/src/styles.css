@@ -1,0 +1,18 @@
+@layer theme, base, components, utilities;
+
+@import "tailwindcss/theme.css" layer(theme);
+@import "tailwindcss/utilities.css" layer(utilities) source(none);
+
+@source ".";
+
+@import "../../../styles/theme.css";
+@import "../../../styles/base.css";
+
+@utility profile-columns {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, var(--container-aside));
+
+  @media (width < theme(--breakpoint-stack)) {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
