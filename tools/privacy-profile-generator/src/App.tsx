@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
+import { HomeOrb } from '../../../shared/home-orb/HomeOrb'
 import { BrowserClipboard, type ClipboardPort } from './browser/clipboard'
 import { ProfileFieldRow } from './components/ProfileFieldRow'
 import { profileRegions, type ProfileSnapshot, type RegionId } from './domain/profile'
@@ -170,13 +171,13 @@ export function PrivacyProfileGenerator({
 
   return (
     <main className="min-h-screen">
+      <HomeOrb />
       <header className="page-inset flex min-h-header flex-wrap items-center justify-between gap-x-4 gap-y-2 border-b border-line bg-surface/90 py-3 max-phone:min-h-header-phone">
-        <div className="flex items-center gap-4">
+        <div className="home-orb-offset flex items-center gap-4">
           <a aria-label="隐私替代资料生成器首页" className="inline-flex items-center gap-2.5 text-ink no-underline max-phone:gap-2" href="#top">
             <span className="grid size-gutter place-items-center rounded-control bg-primary-deep text-on-deep max-phone:size-panel"><PrivacyMark /></span>
             <span className="text-brand">隐私替代资料</span>
           </a>
-          <a className="whitespace-nowrap text-ui text-muted underline hover:text-primary-deep" href="../../">所有工具</a>
         </div>
         <span className="inline-flex items-center gap-2 text-label text-muted max-phone:gap-1.5 max-phone:text-micro">
           <span aria-hidden="true" className="size-2 shrink-0 rounded-full bg-primary shadow-focus" />

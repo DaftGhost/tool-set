@@ -57,6 +57,7 @@ git config core.hooksPath .githooks
 | 路径 | 职责 |
 | --- | --- |
 | `catalog/` | React、TypeScript 和 Vite 工具目录页 |
+| `shared/home-orb/` | 工具页共用的返回首页圆钮 |
 | `tools/<browser-tool>/` | 每个工具独立管理源码、依赖和配置；`README.md` 说明运行方式，`tool.json` 声明目录元数据及开发、构建命令 |
 | `tools/random-persona-generator/` | 人设前端、只读接口、D1 迁移及本地数据准备和导入脚本 |
 | `worker/` | 站点 Worker 入口与绑定类型，连接人设接口和静态资源 |

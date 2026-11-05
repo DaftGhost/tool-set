@@ -62,3 +62,34 @@ export function groupCatalogTools(tools: CatalogTool[]): CatalogGroup[] {
 
   return [...groups].map(([category, groupedTools]) => ({ category, tools: groupedTools }))
 }
+
+export class CatalogCards {
+  static tags: Record<string, readonly string[]> = {
+    'llm-api-cost-calculator': ['多方案对比', 'USD / CNY', '图表'],
+    'text-formatter': ['JSON', 'XML', 'SQL'],
+    'privacy-profile-generator': ['隐私保护', '本地生成'],
+    'random-persona-generator': ['人物档案', '一键复制', '本地历史'],
+  }
+
+  static tagsFor(tool: CatalogTool): string[] {
+    const known = CatalogCards.tags[tool.slug]
+    return known ? [...known] : [tool.category, tool.actionLabel]
+  }
+}
+
+export class CatalogSearch {
+  static normalize(query: string): string {
+    return query.trim().toLocaleLowerCase()
+  }
+
+  static matches(tool: CatalogTool, query: string): boolean {
+    const needle = CatalogSearch.normalize(query)
+    if (needle === '') return true
+    const haystack = `${tool.name}\n${tool.summary}\n${tool.category}\n${CatalogCards.tagsFor(tool).join('\n')}`.toLocaleLowerCase()
+    return haystack.includes(needle)
+  }
+
+  static filter(tools: CatalogTool[], query: string): CatalogTool[] {
+    return tools.filter((tool) => CatalogSearch.matches(tool, query))
+  }
+}

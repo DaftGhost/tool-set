@@ -1,0 +1,39 @@
+.home-orb {
+  position: fixed;
+  z-index: 5;
+  top: var(--spacing-3);
+  left: var(--spacing-3);
+  display: grid;
+  width: var(--spacing-control);
+  height: var(--spacing-control);
+  place-items: center;
+  border: 1px solid var(--color-line);
+  border-radius: var(--radius-full);
+  background: var(--color-surface);
+  color: var(--color-primary-deep);
+  box-shadow: var(--shadow-panel);
+  text-decoration: none;
+  transition: background-color 150ms ease, border-color 150ms ease;
+}
+
+.home-orb:hover {
+  border-color: var(--color-primary-muted);
+  background: var(--color-primary-soft);
+}
+
+.home-orb-offset {
+  --home-inset: max(var(--spacing-gutter), (100vw - var(--container-page)) / 2);
+  margin-inline-start: max(0px, calc(var(--spacing-3) + var(--spacing-control) + var(--spacing-3) - var(--home-inset)));
+}
+
+@media (width < theme(--breakpoint-stack)) {
+  .home-orb-offset {
+    --home-inset: var(--spacing-gutter-stack);
+  }
+}
+
+@media (width < theme(--breakpoint-phone)) {
+  .home-orb-offset {
+    --home-inset: var(--spacing-gutter-phone);
+  }
+}

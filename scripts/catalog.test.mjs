@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
-import { groupCatalogTools, loadCatalogData } from '../catalog/src/catalog.ts'
+import { CatalogCards, CatalogSearch, groupCatalogTools, loadCatalogData } from '../catalog/src/catalog.ts'
 
 const tools = [
   { slug: 'first-tool', category: 'API 费用估算', actionLabel: '开始测算', name: 'First tool', summary: 'Estimate costs.', href: './tools/first-tool/' },
@@ -20,6 +20,20 @@ test('loads a valid manifest and groups tools in first-seen category order', asy
     { category: 'API 费用估算', tools: tools.slice(0, 2) },
     { category: '文本处理', tools: tools.slice(2) },
   ])
+})
+
+test('filters tools by name, summary, category, or card tag', () => {
+  assert.deepEqual(CatalogSearch.filter(tools, '  FIRST '), [tools[0]])
+  assert.deepEqual(CatalogSearch.filter(tools, 'compare'), [tools[1]])
+  assert.deepEqual(CatalogSearch.filter(tools, '文本'), [tools[2]])
+  assert.deepEqual(CatalogSearch.filter(tools, '开始测算'), tools.slice(0, 2))
+  assert.deepEqual(CatalogSearch.filter(tools, '   '), tools)
+  assert.deepEqual(CatalogSearch.filter(tools, 'missing'), [])
+  assert.deepEqual(CatalogCards.tagsFor(tools[0]), ['API 费用估算', '开始测算'])
+  assert.deepEqual(CatalogCards.tagsFor({
+    ...tools[0],
+    slug: 'llm-api-cost-calculator',
+  }), ['多方案对比', 'USD / CNY', '图表'])
 })
 
 test('accepts an empty manifest and returns no groups', async () => {

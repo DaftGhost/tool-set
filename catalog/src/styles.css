@@ -8,16 +8,12 @@
 @import "../../styles/theme.css";
 @import "../../styles/base.css";
 
-@utility catalog-card {
+@utility catalog-grid {
   display: grid;
-  min-height: 180px;
-  grid-template-columns: minmax(0, 1.12fr) minmax(260px, 0.88fr);
-
-  @media (width < theme(--breakpoint-stack)) {
-    grid-template-columns: minmax(0, 1fr);
-  }
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--spacing-4);
 
   @media (width < theme(--breakpoint-phone)) {
-    min-height: 0;
+    grid-template-columns: minmax(0, 1fr);
   }
 }

@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { HomeOrb } from '../../../shared/home-orb/HomeOrb'
 import { ContextPricingControls } from './components/ContextPricingControls'
 import { CostBreakdown } from './components/CostBreakdown'
 import { CostChart } from './components/CostChart'
@@ -169,8 +170,9 @@ export function App() {
 
   return (
     <div className="min-h-screen">
+      <HomeOrb />
       <header className="page-inset flex h-header items-center justify-between border-b border-line bg-surface/90 max-phone:h-header-phone">
-        <a className="inline-flex items-center gap-2.5 text-ink no-underline max-phone:gap-2" href="#top" aria-label="Token Cost 首页">
+        <a className="home-orb-offset inline-flex items-center gap-2.5 text-ink no-underline max-phone:gap-2" href="#top" aria-label="Token Cost 首页">
           <span className="flex size-gutter items-end gap-1 rounded-control bg-primary-deep p-1" aria-hidden="true">
             <i className="block h-2 w-1 rounded-full bg-surface opacity-70" />
             <i className="block h-3 w-1 rounded-full bg-surface" />
@@ -179,7 +181,6 @@ export function App() {
           <span className="text-brand">token<span className="text-primary">cost</span></span>
         </a>
         <div className="flex items-center gap-section max-stack:gap-3 max-phone:gap-2">
-          <a className="text-label font-semibold whitespace-nowrap text-primary-deep no-underline hover:text-primary hover:underline" href="../../">所有工具</a>
           <div className="inline-flex gap-0 rounded-control border border-line bg-surface-alt p-1" role="group" aria-label="金额显示币种">
             <button className={currencyButtonClass} type="button" aria-pressed={currency === 'CNY'} onClick={() => selectCurrency('CNY')}>CNY</button>
             <button
