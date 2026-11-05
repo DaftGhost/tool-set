@@ -37,3 +37,8 @@ textarea {
 @utility dialog-card {
   width: min(100%, 480px);
 }
+
+@utility result-dialog {
+  width: min(100%, 960px);
+  height: min(760px, calc(100vh - 120px));
+}

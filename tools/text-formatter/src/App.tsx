@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { BrowserClipboard, type ClipboardPort } from './browser/clipboard'
+import { ResultDialog, ResultSurface } from './components/ResultDialog'
 import { SchemeBoard } from './components/SchemeBoard'
 import { SchemeDialog } from './components/SchemeDialog'
 import {
@@ -56,6 +57,7 @@ export function TextFormatterApp({
   const [pendingDelete, setPendingDelete] = useState<FormatScheme | null>(null)
   const [storageError, setStorageError] = useState('')
   const [copyMessage, setCopyMessage] = useState('')
+  const [resultOpen, setResultOpen] = useState(false)
 
   useEffect(() => {
     const snapshot = repository.load()
@@ -192,18 +194,29 @@ export function TextFormatterApp({
                     <h2 className="m-0 text-section text-ink" id="result-heading">结果</h2>
                     <p className="m-0 mt-1 text-label text-muted">{active && !inputEmpty ? `使用方案 ${active.name}` : '等待文本'}</p>
                   </div>
-                  <button className={primaryButton} disabled={inputEmpty} onClick={() => void copyOutput()} type="button">复制结果</button>
+                  <div className="flex flex-wrap gap-2">
+                    <button
+                      aria-expanded={resultOpen}
+                      className={`${quietButton} disabled:cursor-not-allowed disabled:opacity-55`}
+                      disabled={!ResultSurface.canOpen(preview.output)}
+                      onClick={() => setResultOpen(true)}
+                      type="button"
+                    >
+                      展开
+                    </button>
+                    <button className={primaryButton} disabled={inputEmpty} onClick={() => void copyOutput()} type="button">复制结果</button>
+                  </div>
                 </div>
                 {preview.error && <p className="m-0 mt-3 rounded-control border border-warn-line bg-warn-bg px-3 py-2 text-ui text-warn" role="alert">{preview.error}</p>}
                 <textarea
                   aria-label="格式化结果"
-                  className="editor-area mt-3 w-full resize-y rounded-inset border border-line bg-primary-deep p-3 font-mono text-value text-on-deep"
+                  className={`editor-area mt-3 w-full resize-y ${ResultSurface.classes()}`}
                   placeholder="输入内容后，结果会显示在这里"
                   readOnly
                   spellCheck={false}
                   value={preview.output}
                 />
-                <p aria-live="polite" className="m-0 mt-2 min-h-5 text-ui text-primary-deep" role="status">{copyMessage}</p>
+                <p aria-live={resultOpen ? 'off' : 'polite'} className="m-0 mt-2 min-h-5 text-ui text-primary-deep" role="status">{copyMessage}</p>
               </div>
             </div>
           </section>
@@ -223,6 +236,15 @@ export function TextFormatterApp({
         {storageError && <p className="m-0 text-ui text-clay" role="status">{storageError}</p>}
         <p className="m-0 text-label text-muted">格式化和自定义方案只保存在当前浏览器。清除本网站数据会删除这些方案。</p>
       </div>
+
+      {resultOpen && (
+        <ResultDialog
+          copyMessage={copyMessage}
+          onClose={() => setResultOpen(false)}
+          onCopy={() => void copyOutput()}
+          output={preview.output}
+        />
+      )}
 
       {dialog && (
         <SchemeDialog
