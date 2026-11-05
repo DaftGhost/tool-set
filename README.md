@@ -137,7 +137,7 @@ corepack pnpm run preview:workers --persist-to .wrangler/state
 
 工作流从上传日志读取公开的 Version URL，并写到该拉取请求的一条评论。评论以 `<!-- tool-set-pr-preview -->` 开头；同一次拉取请求再次运行时更新这条评论，而不是另开一条。评论里保留每次上传的版本 ID。关闭或合并拉取请求时，工作流删除这些版本，但会跳过当前生产部署正在提供流量的版本，以及标签不是 `pr-<拉取请求号>` 的版本。删除后预览地址失效，生产站点保持 Workers Builds 发布的版本。同一拉取请求上尚未结束的运行会被新的运行取消。
 
-`wrangler.json` 已开启 `workers.dev`。Version URL 默认跟随该设置。若账号里关掉了 Version URL，上传日志不会给出预览地址，工作流失败，生产流量也不会切到新版本。预览地址是公开的 `workers.dev` 链接。仓库 Settings 的 Actions secrets 必须提供 `CLOUDFLARE_ACCOUNT_ID` 和 `CLOUDFLARE_API_TOKEN`；这两个值只在工作流里读取，不会写入 Git。令牌需要 Workers Scripts Write，以便上传和删除版本。来自 fork 的拉取请求读不到这些 secrets，工作流不会为它们上传预览。
+`wrangler.json` 已开启 `workers.dev`。Version URL 默认跟随该设置。若账号里关掉了 Version URL，上传日志不会给出预览地址，工作流失败，生产流量也不会切到新版本。预览地址是公开的 `workers.dev` 链接。仓库 Settings 的 Actions secrets 必须提供 `CLOUDFLARE_ACCOUNT_ID` 和 `CLOUDFLARE_API_TOKEN`；这两个值只在工作流里读取，不会写入 Git。令牌需要能读取并编辑现有的 `tool-set` Worker（Workers Scripts Write / Workers Editor）。只能列出账号、却不能调用 Workers 服务接口的令牌会在 `wrangler versions upload` 时返回认证错误 10000，工作流不会发表评论。来自 fork 的拉取请求读不到这些 secrets，工作流不会为它们上传预览。
 
 评论形状如下：
 

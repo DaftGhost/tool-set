@@ -46,7 +46,7 @@ jobs:
           UPLOAD_LOG: ${{ runner.temp }}/wrangler-versions-upload.log
         run: |
           set -eu
-          if ! corepack pnpm exec wrangler versions upload --tag "pr-${PR_NUMBER}" --message "pull request #${PR_NUMBER} ${HEAD_SHA}" >"$UPLOAD_LOG" 2>&1; then
+          if ! corepack pnpm exec wrangler versions upload --env="" --tag "pr-${PR_NUMBER}" --message "pull request #${PR_NUMBER} ${HEAD_SHA}" >"$UPLOAD_LOG" 2>&1; then
             cat "$UPLOAD_LOG"
             exit 1
           fi

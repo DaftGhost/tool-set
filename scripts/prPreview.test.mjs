@@ -181,7 +181,7 @@ test('the pull request workflow uploads a version and deletes it on close', asyn
   assert.match(workflow, /secrets\.CLOUDFLARE_API_TOKEN/)
   assert.match(workflow, /corepack pnpm install --frozen-lockfile/)
   assert.match(workflow, /corepack pnpm run build/)
-  assert.match(workflow, /wrangler versions upload/)
+  assert.match(workflow, /wrangler versions upload --env="" /)
   assert.match(workflow, /node scripts\/prPreview\.mjs comment/)
   assert.match(workflow, /node scripts\/prPreview\.mjs cleanup/)
   assert.equal(workflow.includes('wrangler deploy'), false)
