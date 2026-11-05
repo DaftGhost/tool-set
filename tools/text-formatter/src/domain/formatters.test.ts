@@ -91,7 +91,38 @@ describe('XmlFormatter', () => {
 })
 
 describe('SqlFormatter', () => {
-  it('lowercases the entire pretty-printed statement and indents with one tab', () => {
+  it('keeps string literals unchanged when keywords and identifiers are lowercased', () => {
+    expect(SqlFormatter.format(
+      "SELECT * FROM Users WHERE name = 'Ada' AND note = 'It''s Bob' AND city = 'São Paulo'",
+      defaults,
+    )).toBe([
+      'select',
+      '\t*',
+      'from',
+      '\tusers',
+      'where',
+      "\tname = 'Ada'",
+      '\tand note = \'It\'\'s Bob\'',
+      '\tand city = \'São Paulo\'',
+    ].join('\n'))
+  })
+
+  it('does not change string literals when keywords and identifiers are uppercased', () => {
+    expect(SqlFormatter.format(
+      "select name from users where name = 'Ada' and note = 'It''s Bob'",
+      options({ sqlCasing: 'upper' }),
+    )).toBe([
+      'SELECT',
+      '\tNAME',
+      'FROM',
+      '\tUSERS',
+      'WHERE',
+      "\tNAME = 'Ada'",
+      '\tAND NOTE = \'It\'\'s Bob\'',
+    ].join('\n'))
+  })
+
+  it('lowercases keywords and unquoted identifiers and indents with one tab', () => {
     expect(SqlFormatter.format(
       "SELECT u.Id, u.Name FROM Users AS u WHERE u.Status = 'Active' AND u.Id > 1 ORDER BY u.Id ASC",
       defaults,
@@ -102,7 +133,7 @@ describe('SqlFormatter', () => {
       'from',
       '\tusers as u',
       'where',
-      "\tu.status = 'active'",
+      "\tu.status = 'Active'",
       '\tand u.id > 1',
       'order by',
       '\tu.id asc',
@@ -162,7 +193,7 @@ describe('SqlFormatter', () => {
       ')',
       'values (',
       '\t1,',
-      "\t'ann'",
+      "\t'Ann'",
       ')',
     ].join('\n'))
   })

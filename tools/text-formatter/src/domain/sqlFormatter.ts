@@ -236,7 +236,7 @@ export class SqlFormatter {
 
   static #applyCase(tokens: readonly SqlToken[], casing: SqlCasing): SqlToken[] {
     return tokens.map((token) => {
-      if (casing === 'preserve') return token
+      if (casing === 'preserve' || token.kind !== 'word') return token
       if (casing === 'lower') return { ...token, value: token.value.toLowerCase() }
       if (casing === 'upper') return { ...token, value: token.value.toUpperCase() }
       if (!token.keyword) return token
