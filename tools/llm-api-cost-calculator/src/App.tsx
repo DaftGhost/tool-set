@@ -8,7 +8,6 @@ import { ScenarioComparison } from './components/ScenarioComparison'
 import type { ComparisonRow } from './components/ScenarioComparison'
 import { RequestPricing, calculateCost, formatNumber, parseScenarioDraft } from './domain/cost'
 import type { DraftField, ModelPriceSource } from './domain/cost'
-import { CacheTtlPricing } from './domain/pricing'
 import { convertPriceInputToCny, displayPriceInput } from './domain/currency'
 import type { CurrencyCode } from './domain/currency'
 import type { ChartAxis, CostMetric } from './domain/chart'
@@ -155,7 +154,6 @@ export function App() {
     ? formatNumber(Math.max(0, 100 - hitShare - writeShare), 4)
     : null
   const writePriceLocked = Boolean(activeScenario.modelPriceSource)
-    && !CacheTtlPricing.isCustom(activeScenario.cacheTtlId, activeScenario.customTtls)
 
   const priceFieldProps = (field: PriceField, readOnly = Boolean(activeScenario.modelPriceSource)) => ({
     unit: currency === 'USD' ? '$ / M' : '¥ / M',
@@ -331,9 +329,6 @@ export function App() {
                 scenario={activeScenario}
                 onContextTier={(value) => dispatch({ type: 'setContextTier', value, usdToCny })}
                 onCacheTtl={(id) => dispatch({ type: 'setCacheTtl', id, usdToCny })}
-                onAddCustomTtl={() => dispatch({ type: 'addCustomTtl' })}
-                onRenameCustomTtl={(id, label) => dispatch({ type: 'renameCustomTtl', id, label })}
-                onRemoveCustomTtl={(id) => dispatch({ type: 'removeCustomTtl', id, usdToCny })}
               />
               <div className="grid grid-cols-2 gap-3 max-phone:grid-cols-1 max-phone:gap-3">
                 <ParameterField id="cached-price" label="缓存输入" compact {...priceFieldProps('cachedPrice')} />

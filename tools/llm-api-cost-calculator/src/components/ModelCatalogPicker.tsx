@@ -68,7 +68,7 @@ export function ModelCatalogPicker({ selectedSource, exchangeRateAvailable, onSe
   })()
 
   const availabilityHint = exchangeRateAvailable
-    ? '定价单位为 USD / 百万 Token。未提供缓存读取价时按输入价计算，未提供缓存写入价时按 0；有上下文分档时按本次输入长度载入整档单价。'
+    ? '定价单位为 USD / 百万 Token。未提供缓存读取价时按输入价计算，未提供缓存写入价时按 0；有上下文分档时，整段请求使用其中一档的单价。'
     : '获取 USD/CNY 汇率后即可载入目录价格。'
 
   function isSelected(source: ModelPriceSource): boolean {

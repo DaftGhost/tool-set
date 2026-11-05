@@ -1,4 +1,4 @@
-import type { ContextTierPrice, ModelPriceSource } from '../domain/cost'
+import type { CacheDurationPrice, ContextTierPrice, ModelPriceSource } from '../domain/cost'
 
 const MODELS_DEV_API = 'https://models.dev/catalog.json'
 
@@ -38,19 +38,22 @@ type BasePrices = Readonly<{
   outputUsdPerMillion: number
   cacheReadUsdPerMillion: number
   cacheWriteUsdPerMillion: number
+  cacheTtls: readonly CacheDurationPrice[]
 }>
 
-/** Reads models.dev cost objects, including context tiers with nested cache prices. */
+/** Reads models.dev cost objects. Tiers and write durations are copied from the payload only. */
 export class CatalogCost {
   static read(cost: unknown): (BasePrices & { contextTiers: ContextTierPrice[] }) | null {
     if (!isRecord(cost) || !isPrice(cost.input) || !isPrice(cost.output)) return null
     if (cost.cache_read != null && !isPrice(cost.cache_read)) return null
 
+    const write = CatalogCost.cacheWrite(cost.cache_write, 0)
     const base: BasePrices = {
       inputUsdPerMillion: cost.input,
       outputUsdPerMillion: cost.output,
       cacheReadUsdPerMillion: isPrice(cost.cache_read) ? cost.cache_read : cost.input,
-      cacheWriteUsdPerMillion: isPrice(cost.cache_write) ? cost.cache_write : 0,
+      cacheWriteUsdPerMillion: write.price,
+      cacheTtls: write.ttls,
     }
     return { ...base, contextTiers: CatalogCost.tiers(cost, base) }
   }
@@ -66,16 +69,6 @@ export class CatalogCost {
       collected.push(tier)
     }
 
-    // context_over_200k repeats the tiered long-context price under an older 200k name.
-    // When cost.tiers already has a context cliff, that list is the threshold.
-    if (collected.length === 0 && isRecord(cost.context_over_200k)) {
-      const legacy = CatalogCost.contextTier({
-        ...cost.context_over_200k,
-        tier: { type: 'context', size: 200_000 },
-      }, base)
-      if (legacy) collected.push(legacy)
-    }
-
     collected.sort((left, right) => left.aboveTokens - right.aboveTokens)
     return collected
   }
@@ -86,19 +79,62 @@ export class CatalogCost {
     if (typeof size !== 'number' || !Number.isInteger(size) || size <= 0 || size > 100_000_000) return null
     if (!CatalogCost.hasBillablePrice(raw)) return null
 
+    const write = raw.cache_write === undefined
+      ? { price: base.cacheWriteUsdPerMillion, ttls: base.cacheTtls }
+      : CatalogCost.cacheWrite(raw.cache_write, base.cacheWriteUsdPerMillion)
     return {
       aboveTokens: size,
       inputUsdPerMillion: CatalogCost.priceOr(raw.input, base.inputUsdPerMillion),
       outputUsdPerMillion: CatalogCost.priceOr(raw.output, base.outputUsdPerMillion),
       cacheReadUsdPerMillion: CatalogCost.priceOr(raw.cache_read, base.cacheReadUsdPerMillion),
-      cacheWriteUsdPerMillion: CatalogCost.priceOr(raw.cache_write, base.cacheWriteUsdPerMillion),
+      cacheWriteUsdPerMillion: write.price,
+      cacheTtls: write.ttls,
     }
+  }
+
+  /** A number is one write price. A map of durations is a picker. Anything else is not a duration list. */
+  static cacheWrite(value: unknown, fallbackPrice: number): { price: number; ttls: CacheDurationPrice[] } {
+    if (isPrice(value)) return { price: value, ttls: [] }
+    if (!isRecord(value)) return { price: fallbackPrice, ttls: [] }
+
+    const ttls: CacheDurationPrice[] = []
+    for (const [id, price] of Object.entries(value)) {
+      if (!CatalogCost.isDurationKey(id) || !isPrice(price)) continue
+      ttls.push({ id, writeUsdPerMillion: price })
+    }
+    const ordered = CatalogCost.orderDurations(ttls)
+    if (ordered.length === 0) return { price: fallbackPrice, ttls: [] }
+    if (ordered.length === 1) return { price: ordered[0].writeUsdPerMillion, ttls: [] }
+    return { price: ordered[0].writeUsdPerMillion, ttls: ordered }
+  }
+
+  static isDurationKey(id: string): boolean {
+    return id.trim().length > 0 && id.length <= 16 && !/\s/.test(id)
+  }
+
+  static orderDurations(ttls: readonly CacheDurationPrice[]): CacheDurationPrice[] {
+    return [...ttls].sort((left, right) => CatalogCost.durationMinutes(left.id) - CatalogCost.durationMinutes(right.id))
+  }
+
+  static durationMinutes(id: string): number {
+    const match = /^(\d+(?:\.\d+)?)([smhd])$/i.exec(id)
+    if (!match) return Number.POSITIVE_INFINITY
+    const amount = Number(match[1])
+    const unit = match[2].toLowerCase()
+    if (unit === 's') return amount / 60
+    if (unit === 'm') return amount
+    if (unit === 'h') return amount * 60
+    return amount * 24 * 60
   }
 
   static hasBillablePrice(raw: Record<string, unknown>): boolean {
     const keys = ['input', 'output', 'cache_read', 'cache_write'] as const
-    const present = keys.filter((key) => raw[key] !== undefined)
-    return present.some((key) => isPrice(raw[key]) && raw[key] > 0)
+    return keys.some((key) => {
+      const value = raw[key]
+      if (value === undefined) return false
+      if (isPrice(value)) return value > 0
+      return key === 'cache_write' && isRecord(value) && Object.values(value).some((price) => isPrice(price) && price > 0)
+    })
   }
 
   static priceOr(value: unknown, fallback: number): number {
@@ -190,6 +226,7 @@ export async function fetchModelCatalog(): Promise<ModelCatalogEntry[]> {
           inputUsdPerMillion: priced.inputUsdPerMillion,
           cacheReadUsdPerMillion: priced.cacheReadUsdPerMillion,
           cacheWriteUsdPerMillion: priced.cacheWriteUsdPerMillion,
+          cacheTtls: priced.cacheTtls,
           outputUsdPerMillion: priced.outputUsdPerMillion,
           contextTiers: priced.contextTiers,
           lastUpdated: typeof rawModel.last_updated === 'string' && rawModel.last_updated.length <= 32

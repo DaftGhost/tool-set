@@ -1,4 +1,4 @@
-import type { ContextTierPrice, CustomTtlRow, ModelPriceSource } from './cost'
+import type { CacheDurationPrice, ContextTierPrice, ModelPriceSource } from './cost'
 import { formatNumber } from './cost'
 
 export type PriceBracket = Readonly<{
@@ -6,18 +6,14 @@ export type PriceBracket = Readonly<{
   inputUsdPerMillion: number
   cacheReadUsdPerMillion: number
   cacheWriteUsdPerMillion: number
+  cacheTtls: readonly CacheDurationPrice[]
   outputUsdPerMillion: number
 }>
 
 export type CacheTtlChoice = Readonly<{
   id: string
   label: string
-  custom: boolean
 }>
-
-const CATALOG_TTL: CacheTtlChoice = { id: 'catalog', label: '目录默认', custom: false }
-const ANTHROPIC_HOUR: CacheTtlChoice = { id: 'anthropic-1h', label: '1 小时（2× 本档输入价）', custom: false }
-const OPENAI_12H: CacheTtlChoice = { id: 'openai-12h', label: '12 小时（2.5× 本档输入价）', custom: false }
 
 /** Whole-request context cliffs. A tier applies only when prompt tokens are greater than its size. */
 export class ContextPricing {
@@ -53,7 +49,7 @@ export class ContextPricing {
 
   static baseLabel(tiers: readonly ContextTierPrice[]): string {
     const first = ContextPricing.ordered(tiers)[0]
-    return first ? `不超过 ${formatNumber(first.aboveTokens, 0)} tokens` : '基础档'
+    return first ? `不超过 ${formatNumber(first.aboveTokens, 0)} tokens` : ''
   }
 
   static tierLabel(tier: ContextTierPrice, tiers: readonly ContextTierPrice[]): string {
@@ -83,6 +79,7 @@ export class ContextPricing {
       inputUsdPerMillion: source.inputUsdPerMillion,
       cacheReadUsdPerMillion: source.cacheReadUsdPerMillion,
       cacheWriteUsdPerMillion: source.cacheWriteUsdPerMillion,
+      cacheTtls: source.cacheTtls ?? [],
       outputUsdPerMillion: source.outputUsdPerMillion,
     }
   }
@@ -93,35 +90,21 @@ export class ContextPricing {
       inputUsdPerMillion: tier.inputUsdPerMillion,
       cacheReadUsdPerMillion: tier.cacheReadUsdPerMillion,
       cacheWriteUsdPerMillion: tier.cacheWriteUsdPerMillion,
+      cacheTtls: tier.cacheTtls ?? [],
       outputUsdPerMillion: tier.outputUsdPerMillion,
     }
   }
 }
 
-/** TTL choices sit on the selected bracket. The catalog stores one cache_write per tier, not a TTL matrix. */
+/** Durations come only from a models.dev cache_write map. One price is not a choice. */
 export class CacheTtlPricing {
-  static presets(providerId: string): readonly CacheTtlChoice[] {
-    if (providerId === 'anthropic') return [CATALOG_TTL, ANTHROPIC_HOUR]
-    if (providerId === 'openai') return [CATALOG_TTL, OPENAI_12H]
-    return [CATALOG_TTL]
+  static choices(ttls: readonly CacheDurationPrice[]): CacheTtlChoice[] {
+    if (ttls.length < 2) return []
+    return ttls.map((ttl) => ({ id: ttl.id, label: ttl.id }))
   }
 
-  static choices(providerId: string, customTtls: readonly CustomTtlRow[]): CacheTtlChoice[] {
-    return [
-      ...CacheTtlPricing.presets(providerId),
-      ...customTtls.map((row) => ({ id: row.id, label: row.label.trim() || '自定义', custom: true })),
-    ]
-  }
-
-  static isCustom(ttlId: string, customTtls: readonly CustomTtlRow[]): boolean {
-    return customTtls.some((row) => row.id === ttlId)
-  }
-
-  /** Null means the write price is the custom row, already stored in the scenario currency. */
-  static writeUsd(providerId: string, bracket: PriceBracket, ttlId: string): number | null {
-    if (ttlId === ANTHROPIC_HOUR.id && providerId === 'anthropic') return bracket.inputUsdPerMillion * 2
-    if (ttlId === OPENAI_12H.id && providerId === 'openai') return bracket.inputUsdPerMillion * 2.5
-    if (ttlId === CATALOG_TTL.id) return bracket.cacheWriteUsdPerMillion
-    return null
+  static writeUsd(bracket: PriceBracket, ttlId: string): number {
+    const listed = bracket.cacheTtls.find((ttl) => ttl.id === ttlId)
+    return listed ? listed.writeUsdPerMillion : bracket.cacheWriteUsdPerMillion
   }
 }

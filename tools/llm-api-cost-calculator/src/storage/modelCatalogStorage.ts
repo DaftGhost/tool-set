@@ -15,6 +15,18 @@ function isPrice(value: unknown): value is number {
   return typeof value === 'number' && Number.isFinite(value) && value >= 0
 }
 
+function isDurationPrice(value: unknown): boolean {
+  if (!isRecord(value)) return false
+  return typeof value.id === 'string'
+    && value.id.length > 0
+    && value.id.length <= 16
+    && isPrice(value.writeUsdPerMillion)
+}
+
+function isDurationList(value: unknown): boolean {
+  return value === undefined || (Array.isArray(value) && value.length <= 8 && value.every(isDurationPrice))
+}
+
 function isContextTier(value: unknown): boolean {
   if (!isRecord(value)) return false
   return typeof value.aboveTokens === 'number'
@@ -25,6 +37,7 @@ function isContextTier(value: unknown): boolean {
     && isPrice(value.cacheReadUsdPerMillion)
     && isPrice(value.cacheWriteUsdPerMillion)
     && isPrice(value.outputUsdPerMillion)
+    && isDurationList(value.cacheTtls)
 }
 
 function isModelCatalogEntry(value: unknown): value is ModelCatalogEntry {
@@ -39,6 +52,7 @@ function isModelCatalogEntry(value: unknown): value is ModelCatalogEntry {
     && isPrice(source.cacheReadUsdPerMillion)
     && isPrice(source.cacheWriteUsdPerMillion)
     && isPrice(source.outputUsdPerMillion)
+    && isDurationList(source.cacheTtls)
     && Array.isArray(source.contextTiers)
     && source.contextTiers.length <= 32
     && source.contextTiers.every(isContextTier)

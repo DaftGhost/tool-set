@@ -1,8 +1,15 @@
+/** A duration key published by models.dev, such as `5m` or `1h`, with its write price. */
+export type CacheDurationPrice = Readonly<{
+  id: string
+  writeUsdPerMillion: number
+}>
+
 export type ContextTierPrice = Readonly<{
   aboveTokens: number
   inputUsdPerMillion: number
   cacheReadUsdPerMillion: number
   cacheWriteUsdPerMillion: number
+  cacheTtls?: readonly CacheDurationPrice[]
   outputUsdPerMillion: number
 }>
 
@@ -14,6 +21,7 @@ export type ModelPriceSource = Readonly<{
   inputUsdPerMillion: number
   cacheReadUsdPerMillion: number
   cacheWriteUsdPerMillion: number
+  cacheTtls?: readonly CacheDurationPrice[]
   outputUsdPerMillion: number
   contextTiers: readonly ContextTierPrice[]
   lastUpdated: string | null

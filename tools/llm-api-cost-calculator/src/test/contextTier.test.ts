@@ -92,8 +92,11 @@ describe('context tier and cache TTL pricing', () => {
     expect(fieldInput('缓存输入')).toHaveValue('0.72')
     expect(fieldInput('缓存写入')).toHaveValue('18')
     expect(fieldInput('输出')).toHaveValue('72')
-    expect(screen.getByLabelText('上下文档位')).toHaveValue('auto')
-    expect(optionLabels(screen.getByLabelText('缓存时长'))).toEqual(['目录默认', '12 小时（2.5× 本档输入价）'])
+    expect(screen.getByLabelText('上下文档位')).toHaveValue('base')
+    expect(optionLabels(screen.getByLabelText('上下文档位'))).toEqual(['不超过 272,000 tokens', '超过 272,000 tokens'])
+    expect(screen.queryByLabelText('缓存时长')).toBeNull()
+    expect(screen.queryByRole('button', { name: '添加时长' })).toBeNull()
+    expect(screen.queryByText(/目录默认|catalog default/i)).toBeNull()
 
     await user.clear(fieldInput('输入 Token'))
     await user.type(fieldInput('输入 Token'), '0.272001')
@@ -103,16 +106,12 @@ describe('context tier and cache TTL pricing', () => {
     expect(fieldInput('缓存写入')).toHaveValue('36')
     expect(fieldInput('输出')).toHaveValue('108')
 
-    await user.selectOptions(screen.getByLabelText('缓存时长'), 'openai-12h')
-    expect(fieldInput('缓存写入')).toHaveValue('72')
-    expect(fieldInput('未缓存输入')).toHaveValue('28.8')
-
     await user.selectOptions(screen.getByLabelText('上下文档位'), 'base')
     expect(fieldInput('输入 Token')).toHaveValue('0.272001')
     expect(fieldInput('未缓存输入')).toHaveValue('14.4')
-    expect(fieldInput('缓存写入')).toHaveValue('36')
+    expect(fieldInput('缓存写入')).toHaveValue('18')
 
-    await user.selectOptions(screen.getByLabelText('上下文档位'), 'auto')
+    await user.selectOptions(screen.getByLabelText('上下文档位'), '272000')
     await user.clear(fieldInput('输入 Token'))
     await user.type(fieldInput('输入 Token'), '0.3')
     await user.clear(fieldInput('缓存命中率'))
@@ -125,10 +124,10 @@ describe('context tier and cache TTL pricing', () => {
     const summary = summaryPanel()
     expect(screen.getByText('未缓存输入占比 30%')).toBeInTheDocument()
     expect(costLineText('缓存命中')).toBe('缓存命中0.15M tokens¥0.216')
-    expect(costLineText('缓存写入')).toBe('缓存写入0.06M tokens¥4.32')
+    expect(costLineText('缓存写入')).toBe('缓存写入0.06M tokens¥2.16')
     expect(costLineText('未缓存输入')).toBe('未缓存输入0.09M tokens¥2.592')
     expect(costLineText('输出成本')).toBe('输出成本0.03M tokens¥3.24')
-    expect(within(summary).getByText('预估总成本').parentElement).toHaveTextContent(/^预估总成本¥10\.368$/)
+    expect(within(summary).getByText('预估总成本').parentElement).toHaveTextContent(/^预估总成本¥8\.208$/)
     expect(screen.getByText('当前 77.6%')).toBeInTheDocument()
   })
 
@@ -142,7 +141,48 @@ describe('context tier and cache TTL pricing', () => {
 
     expect(fieldInput('缓存写入占比')).toHaveValue('0')
     expect(fieldInput('缓存写入')).toHaveValue('0')
-    expect(optionLabels(screen.getByLabelText('缓存时长'))).toEqual(['目录默认'])
-    expect(screen.queryByRole('option', { name: '1 小时（2× 本档输入价）' })).toBeNull()
+    expect(screen.queryByLabelText('缓存时长')).toBeNull()
+    expect(screen.queryByText(/目录默认/)).toBeNull()
+  })
+
+  it('shows only durations from cache_write and hides tiers when the catalog has none', async () => {
+    const user = userEvent.setup()
+    stubFetch({
+      catalog: jsonRoute({
+        providers: {
+          openai: {
+            name: 'OpenAI',
+            models: {
+              'duration-model': {
+                name: 'Duration Model',
+                modalities: { input: ['text'], output: ['text'] },
+                cost: { input: 2, output: 8, cache_read: 0.2, cache_write: { '1h': 4, '5m': 2.5 } },
+              },
+              'plain-model': {
+                name: 'Plain Model',
+                modalities: { input: ['text'], output: ['text'] },
+                cost: { input: 1, output: 2 },
+              },
+            },
+          },
+        },
+        models: { 'openai/duration-model': {}, 'openai/plain-model': {} },
+      }),
+    })
+    mountApp()
+    expect(await screen.findByText(/已载入 2 个可选模型/)).toBeInTheDocument()
+
+    await chooseModel(user, 'duration', /Duration Model/)
+    expect(screen.queryByLabelText('上下文档位')).toBeNull()
+    expect(optionLabels(screen.getByLabelText('缓存时长'))).toEqual(['5m', '1h'])
+    expect(fieldInput('缓存写入')).toHaveValue('18')
+    await user.selectOptions(screen.getByLabelText('缓存时长'), '1h')
+    expect(fieldInput('缓存写入')).toHaveValue('28.8')
+    expect(screen.queryByText(/目录默认|catalog default/i)).toBeNull()
+
+    await chooseModel(user, 'plain', /Plain Model/)
+    expect(screen.queryByLabelText('上下文档位')).toBeNull()
+    expect(screen.queryByLabelText('缓存时长')).toBeNull()
+    expect(screen.queryByRole('button', { name: '添加时长' })).toBeNull()
   })
 })

@@ -149,17 +149,33 @@ describe('single-request cache pricing', () => {
     expect(ContextPricing.bracket(priced, 'auto', 128_001).inputUsdPerMillion).toBe(3)
   })
 
-  it('prices a longer TTL from the selected bracket input price', () => {
-    const base = ContextPricing.bracket(source(), 'base', 1)
-    const long = ContextPricing.bracket(source(), '272000', 1)
-    const gemini = source({ providerId: 'google', cacheWriteUsdPerMillion: 0, contextTiers: [] })
+  it('uses only durations published on cache_write and ignores invented multipliers', () => {
+    const scalar = CatalogCost.read({ input: 2, output: 10, cache_read: 0.1, cache_write: 2.5 })
+    const mapped = CatalogCost.read({
+      input: 2,
+      output: 10,
+      cache_write: { '1h': 4, '5m': 2.5, note: 'skip me' },
+    })
+    const oneDuration = CatalogCost.read({ input: 2, output: 10, cache_write: { '5m': 2.5 } })
 
-    expect(CacheTtlPricing.writeUsd('anthropic', base, 'anthropic-1h')).toBe(4)
-    expect(CacheTtlPricing.writeUsd('openai', long, 'openai-12h')).toBe(10)
-    expect(CacheTtlPricing.writeUsd('openai', long, 'catalog')).toBe(5)
-    expect(CacheTtlPricing.writeUsd('google', base, 'catalog')).toBe(2.5)
-    expect(CacheTtlPricing.presets(gemini.providerId).map((choice) => choice.id)).toEqual(['catalog'])
-    expect(CacheTtlPricing.writeUsd('openai', long, 'custom-row')).toBeNull()
+    expect(scalar?.cacheTtls).toEqual([])
+    expect(CacheTtlPricing.choices(scalar?.cacheTtls ?? [])).toEqual([])
+    expect(mapped?.cacheWriteUsdPerMillion).toBe(2.5)
+    expect(mapped?.cacheTtls).toEqual([
+      { id: '5m', writeUsdPerMillion: 2.5 },
+      { id: '1h', writeUsdPerMillion: 4 },
+    ])
+    expect(CacheTtlPricing.choices(mapped?.cacheTtls ?? []).map((choice) => choice.label)).toEqual(['5m', '1h'])
+    expect(oneDuration?.cacheTtls).toEqual([])
+    expect(oneDuration?.cacheWriteUsdPerMillion).toBe(2.5)
+
+    const bracket = ContextPricing.bracket(source({
+      cacheWriteUsdPerMillion: 2.5,
+      cacheTtls: mapped?.cacheTtls,
+    }), 'base', 1)
+    expect(CacheTtlPricing.writeUsd(bracket, '1h')).toBe(4)
+    expect(CacheTtlPricing.writeUsd(bracket, 'anthropic-1h')).toBe(2.5)
+    expect(CacheTtlPricing.writeUsd(bracket, 'catalog')).toBe(2.5)
   })
 
   it('caps the linear hit-rate axis at 100 minus the write share', () => {
@@ -211,7 +227,7 @@ describe('single-request cache pricing', () => {
     expect(scenario.cacheWritePercent).toBe('0')
     expect(scenario.cacheWritePrice).toBe('0')
     expect(scenario.contextTier).toBe('auto')
-    expect(scenario.cacheTtlId).toBe('catalog')
+    expect(scenario.cacheTtlId).toBe('')
     expect(scenario.modelPriceSource?.cacheWriteUsdPerMillion).toBe(0)
     expect(scenario.modelPriceSource?.contextTiers).toEqual([])
     const result = parseScenarioDraft(scenario)
@@ -276,15 +292,8 @@ describe('models.dev context tiers', () => {
     expect(nested?.contextTiers[0].cacheWriteUsdPerMillion).toBe(0)
     expect(nested?.cacheWriteUsdPerMillion).toBe(0)
     expect(shiftedThreshold?.contextTiers.map((tier) => tier.aboveTokens)).toEqual([272_000])
-    expect(legacyOnly?.contextTiers).toEqual([
-      {
-        aboveTokens: 200_000,
-        inputUsdPerMillion: 8,
-        outputUsdPerMillion: 9,
-        cacheReadUsdPerMillion: 0.8,
-        cacheWriteUsdPerMillion: 1.6,
-      },
-    ])
+    expect(legacyOnly?.contextTiers).toEqual([])
+    expect(legacyOnly?.inputUsdPerMillion).toBe(1)
   })
 
   it('ignores a version 1 catalog cache', () => {
