@@ -7,18 +7,18 @@
   width: var(--spacing-control);
   height: var(--spacing-control);
   place-items: center;
-  border: 1px solid var(--color-primary-deep);
+  border: 1px solid var(--color-line);
   border-radius: var(--radius-full);
-  background: var(--color-primary-deep);
-  color: var(--color-on-deep);
+  background: var(--color-surface);
+  color: var(--color-primary-deep);
   box-shadow: var(--shadow-panel);
   text-decoration: none;
   transition: background-color 150ms ease, border-color 150ms ease;
 }
 
 .home-orb:hover {
-  border-color: var(--color-primary);
-  background: var(--color-primary);
+  border-color: var(--color-primary-muted);
+  background: var(--color-primary-soft);
 }
 
 .home-orb-offset {

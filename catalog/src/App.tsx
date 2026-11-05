@@ -62,7 +62,7 @@ function ToolCard({ tool }: { tool: CatalogTool }) {
   return (
     <a className="flex h-full flex-col rounded-panel border border-line bg-surface p-4 text-inherit no-underline transition-colors hover:border-primary" href={tool.href}>
       <span className="flex min-w-0 items-center gap-3">
-        <span className="grid size-control shrink-0 place-items-center rounded-inset border border-primary-muted bg-primary-soft text-primary-deep">
+        <span className="grid size-control shrink-0 place-items-center rounded-inset border border-primary-deep bg-primary-deep text-on-deep">
           {ToolGlyph.mark(tool.slug)}
         </span>
         <span className="min-w-0">
