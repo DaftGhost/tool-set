@@ -129,7 +129,7 @@ describe('TextFormatterApp', () => {
     expect(screen.getByRole('textbox', { name: '格式化结果' })).toHaveValue('{\n\t"b": 1,\n\t"a": 2\n}')
   })
 
-  it('shows formatted text on a white surface and expands it in a dialog', async () => {
+  it('uses the source field for the result and the expand dialog', async () => {
     const user = userEvent.setup()
     const { clipboard } = renderApp()
     const expand = screen.getByRole('button', { name: '展开' })
@@ -138,10 +138,13 @@ describe('TextFormatterApp', () => {
     await user.click(screen.getByRole('textbox', { name: '待格式化文本' }))
     await user.paste('{"b":1,"a":2}')
 
+    const source = screen.getByRole('textbox', { name: '待格式化文本' })
     const result = screen.getByRole('textbox', { name: '格式化结果' })
+    const fieldTokens = ['editor-area', 'rounded-inset', 'border-line', 'bg-surface-alt', 'font-mono', 'text-value', 'text-ink']
     expect(result).toHaveValue('{\n\t"b": 1,\n\t"a": 2\n}')
-    expect(result).toHaveClass('bg-on-deep', 'text-ink')
-    expect(result).not.toHaveClass('bg-primary-deep', 'text-on-deep')
+    expect(source).toHaveClass(...fieldTokens)
+    expect(result).toHaveClass(...fieldTokens)
+    expect(result).not.toHaveClass('bg-on-deep', 'bg-primary-deep', 'text-on-deep')
     expect(expand).toBeEnabled()
 
     await user.click(expand)
@@ -149,8 +152,8 @@ describe('TextFormatterApp', () => {
     const expanded = within(dialog).getByRole('textbox', { name: '展开的格式化结果' })
     expect(expanded).toHaveValue('{\n\t"b": 1,\n\t"a": 2\n}')
     expect(expanded).toHaveProperty('readOnly', true)
-    expect(expanded).toHaveClass('bg-on-deep', 'text-ink')
-    expect(expanded).not.toHaveClass('bg-primary-deep', 'text-on-deep')
+    expect(expanded).toHaveClass(...fieldTokens)
+    expect(expanded).not.toHaveClass('bg-on-deep', 'bg-primary-deep', 'text-on-deep')
 
     await user.click(expanded)
     expect(screen.getByRole('dialog', { name: '格式化结果' })).toBeInTheDocument()

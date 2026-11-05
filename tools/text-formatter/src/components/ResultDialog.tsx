@@ -10,9 +10,9 @@ interface ResultDialogProps {
 const quietButton = 'inline-flex min-h-control cursor-pointer items-center justify-center rounded-control border border-line bg-primary-soft px-3 text-ui font-semibold text-primary-deep transition-colors hover:bg-primary-soft-hover'
 const primaryButton = 'inline-flex min-h-control cursor-pointer items-center justify-center rounded-control border border-primary bg-primary px-4 text-label font-bold text-on-deep transition-colors hover:border-primary-deep hover:bg-primary-deep'
 
-export class ResultSurface {
+export class EditorField {
   static classes(): string {
-    return 'rounded-inset border border-line bg-on-deep p-3 font-mono text-value text-ink'
+    return 'editor-area rounded-inset border border-line bg-surface-alt p-3 font-mono text-value text-ink'
   }
 
   static canOpen(output: string): boolean {
@@ -50,7 +50,7 @@ export function ResultDialog({ output, copyMessage, onClose, onCopy }: ResultDia
         </div>
         <textarea
           aria-label="展开的格式化结果"
-          className={`mt-3 min-h-0 w-full flex-1 resize-none overflow-auto ${ResultSurface.classes()}`}
+          className={`mt-3 min-h-0 w-full flex-1 resize-none overflow-auto ${EditorField.classes()}`}
           readOnly
           spellCheck={false}
           value={output}

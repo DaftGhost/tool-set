@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { BrowserClipboard, type ClipboardPort } from './browser/clipboard'
-import { ResultDialog, ResultSurface } from './components/ResultDialog'
+import { EditorField, ResultDialog } from './components/ResultDialog'
 import { SchemeBoard } from './components/SchemeBoard'
 import { SchemeDialog } from './components/SchemeDialog'
 import {
@@ -159,7 +159,7 @@ export function TextFormatterApp({
             <h2 className="m-0 text-section text-ink" id="source-heading">原文</h2>
             <textarea
               aria-label="待格式化文本"
-              className="editor-area mt-3 w-full resize-y rounded-inset border border-line bg-surface-alt p-3 font-mono text-value text-ink"
+              className={`mt-3 w-full resize-y ${EditorField.classes()}`}
               onChange={(event) => {
                 setInput(event.target.value)
                 setCopyMessage('')
@@ -198,7 +198,7 @@ export function TextFormatterApp({
                     <button
                       aria-expanded={resultOpen}
                       className={`${quietButton} disabled:cursor-not-allowed disabled:opacity-55`}
-                      disabled={!ResultSurface.canOpen(preview.output)}
+                      disabled={!EditorField.canOpen(preview.output)}
                       onClick={() => setResultOpen(true)}
                       type="button"
                     >
@@ -210,7 +210,7 @@ export function TextFormatterApp({
                 {preview.error && <p className="m-0 mt-3 rounded-control border border-warn-line bg-warn-bg px-3 py-2 text-ui text-warn" role="alert">{preview.error}</p>}
                 <textarea
                   aria-label="格式化结果"
-                  className={`editor-area mt-3 w-full resize-y ${ResultSurface.classes()}`}
+                  className={`mt-3 w-full resize-y ${EditorField.classes()}`}
                   placeholder="输入内容后，结果会显示在这里"
                   readOnly
                   spellCheck={false}
