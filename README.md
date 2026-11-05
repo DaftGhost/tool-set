@@ -68,6 +68,7 @@ git config core.hooksPath .githooks
 | `docs/` | 跨工具的产品与运维资料；多数文件按仓库规则仅保存在本地 |
 | `.test-result/` | 一次性测试文件、临时测试脚本及验收输出，仅保存在本地 |
 | `wrangler.json` | Worker 入口、静态资源、源数据版本、真实线上 D1 及独立的本地环境配置 |
+| `.github/workflows/pr-preview.yml` | 拉取请求的 Worker 版本预览：上传未投产的版本、更新评论，并在关闭时删除 |
 | `package.json` | 根级依赖、命令和开发服务默认地址 |
 | `site/` | `pnpm run build` 生成的完整静态站点 |
 
@@ -126,9 +127,30 @@ corepack pnpm run preview:workers --persist-to .wrangler/state
 | 部署命令（Deploy command） | `pnpm exec wrangler deploy` |
 | 构建环境变量 | `NODE_VERSION=24.18.0`、`PNPM_VERSION=12.15.0` |
 
-连接后，每次推送到 `main` 都会触发测试、全量构建和部署；测试或构建失败时不会更新线上站点。其他分支的预览构建（Preview builds）保持关闭。测试、构建和生产发布均由 Workers Builds 执行，仓库不保留 GitHub Actions 工作流，本地 Wrangler 命令仍可用于手动发布。
+连接后，每次推送到 `main` 都会触发测试、全量构建和部署；测试或构建失败时不会更新线上站点。其他分支的预览构建（Preview builds）保持关闭，不启用 Workers Builds 的分支预览，也不另建预览 Worker 或预览 D1。生产流量只由 Workers Builds 在 `main` 上通过 `pnpm exec wrangler deploy` 更新。本地 Wrangler 命令仍可用于手动发布。
 
 配置保存后，推送一次提交，并在 Cloudflare 构建记录中核对提交标识和部署结果，确认触发链路实际运行。自动部署配置参考 [Workers Builds 官方文档](https://developers.cloudflare.com/workers/ci-cd/builds/)。
+
+### 拉取请求预览
+
+打开、同步或重新打开同一个仓库里的拉取请求时，GitHub Actions 工作流 [`.github/workflows/pr-preview.yml`](.github/workflows/pr-preview.yml) 会用 Corepack 调用 `package.json` 中的 pnpm 12.15.0，执行 `pnpm install --frozen-lockfile` 和 `pnpm run build`，再运行 `wrangler versions upload`。上传只为 Worker `tool-set` 新增一个版本，不把该版本部署到生产流量。版本沿用 `wrangler.json` 里现有的生产 `PERSONAS_DB` 绑定。
+
+工作流从上传日志读取公开的 Version URL，并写到该拉取请求的一条评论。评论以 `<!-- tool-set-pr-preview -->` 开头；同一次拉取请求再次运行时更新这条评论，而不是另开一条。评论里保留每次上传的版本 ID。关闭或合并拉取请求时，工作流删除这些版本，但会跳过当前生产部署正在提供流量的版本，以及标签不是 `pr-<拉取请求号>` 的版本。删除后预览地址失效，生产站点保持 Workers Builds 发布的版本。同一拉取请求上尚未结束的运行会被新的运行取消。
+
+`wrangler.json` 已开启 `workers.dev`。Version URL 默认跟随该设置。若账号里关掉了 Version URL，上传日志不会给出预览地址，工作流失败，生产流量也不会切到新版本。预览地址是公开的 `workers.dev` 链接。仓库 Settings 的 Actions secrets 必须提供 `CLOUDFLARE_ACCOUNT_ID` 和 `CLOUDFLARE_API_TOKEN`；这两个值只在工作流里读取，不会写入 Git。令牌需要 Workers Scripts Write，以便上传和删除版本。来自 fork 的拉取请求读不到这些 secrets，工作流不会为它们上传预览。
+
+评论形状如下：
+
+~~~
+<!-- tool-set-pr-preview -->
+预览：https://<版本前 8 位>-tool-set.<subdomain>.workers.dev
+
+该地址指向 Worker `tool-set` 的版本 `<版本 uuid>`（提交 `<sha>`，拉取请求 #<编号>）。
+版本由 `wrangler versions upload` 上传，不接收生产流量。它使用同一个 Worker `tool-set` 和生产环境的 `PERSONAS_DB` 绑定。
+关闭或合并此拉取请求后，工作流会删除这里记录的预览版本。
+
+<!-- version-id: <版本 uuid> -->
+~~~
 
 迁移旧站点时，除移除 Pages 工作流，还需在仓库的 **Settings → Pages** 中取消发布，并将发布来源改为 **Deploy from a branch**、分支设为 **None** 后保存。确认页面显示 **GitHub Pages is currently disabled**，避免只删除工作流文件，却留下已发布的旧站点。
 

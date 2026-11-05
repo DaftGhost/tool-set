@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict'
-import { readFile, readdir } from 'node:fs/promises'
+import { readFile } from 'node:fs/promises'
 import { test } from 'node:test'
 
 const repositoryRoot = new URL('../', import.meta.url)
@@ -29,15 +29,6 @@ test('the default deployment binds a real persona D1 and excludes local-only ide
     assert.match(database.database_id, /^[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}$/)
     assert.notEqual(database.database_id, '00000000-0000-0000-0000-000000000001')
   }
-})
-
-test('the repository has no GitHub workflows because Workers Builds owns validation and deployment', async () => {
-  const directory = new URL('.github/workflows/', repositoryRoot)
-  const files = await readdir(directory).catch((error) => {
-    if (error.code === 'ENOENT') return []
-    throw error
-  })
-  assert.deepEqual(files, [])
 })
 
 test('the persona API runs before assets and unrelated routes retain their asset response', async () => {
