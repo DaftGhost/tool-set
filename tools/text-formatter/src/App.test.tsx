@@ -128,4 +128,52 @@ describe('TextFormatterApp', () => {
     expect(screen.queryByRole('button', { name: /^紧凑 JSON/ })).not.toBeInTheDocument()
     expect(screen.getByRole('textbox', { name: '格式化结果' })).toHaveValue('{\n\t"b": 1,\n\t"a": 2\n}')
   })
+
+  it('uses the source field for the result and the expand dialog', async () => {
+    const user = userEvent.setup()
+    const { clipboard } = renderApp()
+    const expand = screen.getByRole('button', { name: '展开' })
+    expect(expand).toBeDisabled()
+
+    await user.click(screen.getByRole('textbox', { name: '待格式化文本' }))
+    await user.paste('{"b":1,"a":2}')
+
+    const source = screen.getByRole('textbox', { name: '待格式化文本' })
+    const result = screen.getByRole('textbox', { name: '格式化结果' })
+    const fieldTokens = ['editor-area', 'rounded-inset', 'border-line', 'bg-surface-alt', 'font-mono', 'text-value', 'text-ink']
+    expect(result).toHaveValue('{\n\t"b": 1,\n\t"a": 2\n}')
+    expect(source).toHaveClass(...fieldTokens)
+    expect(result).toHaveClass(...fieldTokens)
+    expect(result).not.toHaveClass('bg-on-deep', 'bg-primary-deep', 'text-on-deep')
+    expect(expand).toBeEnabled()
+
+    await user.click(expand)
+    const dialog = screen.getByRole('dialog', { name: '格式化结果' })
+    const expanded = within(dialog).getByRole('textbox', { name: '展开的格式化结果' })
+    expect(expanded).toHaveValue('{\n\t"b": 1,\n\t"a": 2\n}')
+    expect(expanded).toHaveProperty('readOnly', true)
+    expect(expanded).toHaveClass(...fieldTokens)
+    expect(expanded).not.toHaveClass('bg-on-deep', 'bg-primary-deep', 'text-on-deep')
+
+    await user.click(expanded)
+    expect(screen.getByRole('dialog', { name: '格式化结果' })).toBeInTheDocument()
+
+    await user.click(within(dialog).getByRole('button', { name: '复制' }))
+    expect(clipboard.copy).toHaveBeenCalledWith('{\n\t"b": 1,\n\t"a": 2\n}')
+    expect(within(dialog).getByRole('status')).toHaveTextContent('已复制格式化结果。')
+
+    await user.keyboard('{Escape}')
+    expect(screen.queryByRole('dialog', { name: '格式化结果' })).not.toBeInTheDocument()
+
+    await user.click(screen.getByRole('button', { name: '展开' }))
+    await user.click(screen.getByRole('button', { name: '关闭' }))
+    expect(screen.queryByRole('dialog', { name: '格式化结果' })).not.toBeInTheDocument()
+
+    await user.click(screen.getByRole('button', { name: '展开' }))
+    const reopened = screen.getByRole('dialog', { name: '格式化结果' })
+    const overlay = reopened.parentElement
+    if (!overlay) throw new Error('展开窗口缺少遮罩')
+    await user.click(overlay)
+    expect(screen.queryByRole('dialog', { name: '格式化结果' })).not.toBeInTheDocument()
+  })
 })
