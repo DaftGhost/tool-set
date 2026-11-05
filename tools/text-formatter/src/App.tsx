@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
+import { HomeOrb } from '../../../shared/home-orb/HomeOrb'
 import { BrowserClipboard, type ClipboardPort } from './browser/clipboard'
 import { SchemeBoard } from './components/SchemeBoard'
 import { SchemeDialog } from './components/SchemeDialog'
@@ -132,13 +133,13 @@ export function TextFormatterApp({
 
   return (
     <main className="min-h-screen">
+      <HomeOrb />
       <header className="page-inset flex min-h-header flex-wrap items-center justify-between gap-x-4 gap-y-2 border-b border-line bg-surface/90 py-3 max-phone:min-h-header-phone">
-        <div className="flex items-center gap-4">
+        <div className="home-orb-offset flex items-center gap-4">
           <a aria-label="文本格式化首页" className="inline-flex items-center gap-2.5 text-ink no-underline" href="#top">
             <span className="grid size-gutter place-items-center rounded-control bg-primary-deep text-on-deep"><Mark /></span>
             <span className="text-brand">文本格式化</span>
           </a>
-          <a className="whitespace-nowrap text-ui text-muted underline hover:text-primary-deep" href="../../">所有工具</a>
         </div>
         <span className="inline-flex items-center gap-2 text-label text-muted">
           <span aria-hidden="true" className="size-2 shrink-0 rounded-full bg-primary shadow-focus" />

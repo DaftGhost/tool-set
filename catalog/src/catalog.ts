@@ -62,3 +62,20 @@ export function groupCatalogTools(tools: CatalogTool[]): CatalogGroup[] {
 
   return [...groups].map(([category, groupedTools]) => ({ category, tools: groupedTools }))
 }
+
+export class CatalogSearch {
+  static normalize(query: string): string {
+    return query.trim().toLocaleLowerCase()
+  }
+
+  static matches(tool: CatalogTool, query: string): boolean {
+    const needle = CatalogSearch.normalize(query)
+    if (needle === '') return true
+    const haystack = `${tool.name}\n${tool.summary}\n${tool.category}`.toLocaleLowerCase()
+    return haystack.includes(needle)
+  }
+
+  static filter(tools: CatalogTool[], query: string): CatalogTool[] {
+    return tools.filter((tool) => CatalogSearch.matches(tool, query))
+  }
+}

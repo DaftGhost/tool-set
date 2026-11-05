@@ -8,16 +8,18 @@
 @import "../../styles/theme.css";
 @import "../../styles/base.css";
 
-@utility catalog-card {
-  display: grid;
-  min-height: 180px;
-  grid-template-columns: minmax(0, 1.12fr) minmax(260px, 0.88fr);
+@utility catalog-chip {
+  display: flex;
+  width: max-content;
+  max-width: min(100%, 240px);
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--spacing-1);
+}
 
-  @media (width < theme(--breakpoint-stack)) {
-    grid-template-columns: minmax(0, 1fr);
-  }
-
-  @media (width < theme(--breakpoint-phone)) {
-    min-height: 0;
-  }
+@utility catalog-chip-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: stretch;
+  gap: var(--spacing-2);
 }

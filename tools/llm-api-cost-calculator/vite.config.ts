@@ -7,7 +7,8 @@ const hmrClientPort = (globalThis as { process?: { env?: Record<string, string |
 export default defineConfig(({ command }) => ({
   base: command === 'build' ? './' : '/',
   plugins: [tailwindcss(), react()],
-  server: hmrClientPort
-    ? { hmr: { clientPort: Number(hmrClientPort) } }
-    : undefined,
+  server: {
+    fs: { allow: ['.', '../..'] },
+    ...(hmrClientPort ? { hmr: { clientPort: Number(hmrClientPort) } } : {}),
+  },
 }))
