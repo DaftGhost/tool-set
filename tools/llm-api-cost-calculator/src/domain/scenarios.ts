@@ -1,11 +1,12 @@
 import type { CacheDurationPrice, ContextTierPrice, CustomTtlRow, ModelPriceSource, ScenarioDraft } from './cost'
+import { ContextPricing } from './pricing'
 
 export const MAX_SCENARIOS = 16
 export const MAX_CUSTOM_TTLS = 8
 
 function blankCacheFields(): Pick<ScenarioDraft, 'cacheWritePercent' | 'cacheWritePrice' | 'contextTier' | 'cacheTtlId' | 'customTtls'> {
   return {
-    cacheWritePercent: '0',
+    cacheWritePercent: '5',
     cacheWritePrice: '0',
     contextTier: 'auto',
     cacheTtlId: '',
@@ -18,7 +19,7 @@ export const exampleScenarios: ScenarioDraft[] = [
     id: 'example-1',
     name: '方案 1',
     inputTokensM: '100',
-    cacheHitPercent: '97',
+    cacheHitPercent: '94',
     outputRatioPercent: '1',
     cachedPrice: '0.115',
     uncachedPrice: '0.4',
@@ -29,7 +30,7 @@ export const exampleScenarios: ScenarioDraft[] = [
     id: 'example-2',
     name: '方案 2',
     inputTokensM: '100',
-    cacheHitPercent: '97',
+    cacheHitPercent: '94',
     outputRatioPercent: '1',
     cachedPrice: '0.02',
     uncachedPrice: '2',
@@ -189,12 +190,14 @@ function displayZero(value: string | undefined): string {
   return typeof value === 'string' && value.trim() !== '' ? value : '0'
 }
 
-/** Fills fields added after the first save so older drafts keep their costs and show 0 for the new inputs. */
-export function normalizeScenarioDraft(value: ScenarioDraft): ScenarioDraft {
+/** Fills fields added after the first save. A saved manual context tier is priced from the input token count. */
+export function normalizeScenarioDraft(value: ScenarioDraft, usdToCny?: number): ScenarioDraft {
   const record = value as ScenarioDraft & Record<string, unknown>
   const customTtls = Array.isArray(record.customTtls)
     ? record.customTtls.map((row) => ({ ...row }))
     : []
+  const storedTier = typeof record.contextTier === 'string' ? record.contextTier.trim() : ''
+  const manualTier = storedTier !== '' && storedTier !== 'auto'
   const normalized: ScenarioDraft = {
     id: value.id,
     name: value.name,
@@ -206,12 +209,21 @@ export function normalizeScenarioDraft(value: ScenarioDraft): ScenarioDraft {
     cacheWritePrice: displayZero(typeof record.cacheWritePrice === 'string' ? record.cacheWritePrice : undefined),
     uncachedPrice: displayZero(value.uncachedPrice),
     outputPrice: displayZero(value.outputPrice),
-    contextTier: typeof record.contextTier === 'string' && record.contextTier.trim() !== '' ? record.contextTier : 'auto',
+    contextTier: 'auto',
     cacheTtlId: typeof record.cacheTtlId === 'string' ? record.cacheTtlId : '',
     customTtls,
   }
   if (value.modelPriceSource) normalized.modelPriceSource = normalizeModelPriceSource(value.modelPriceSource)
-  return normalized
+  if (!manualTier || usdToCny === undefined || !normalized.modelPriceSource) return normalized
+  return {
+    ...normalized,
+    ...ContextPricing.catalogPrices(
+      normalized.modelPriceSource,
+      ContextPricing.promptTokens(normalized.inputTokensM),
+      normalized.cacheTtlId,
+      usdToCny,
+    ),
+  }
 }
 
 export function validateScenarioList(value: unknown): value is ScenarioDraft[] {

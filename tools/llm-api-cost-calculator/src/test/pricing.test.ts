@@ -118,9 +118,9 @@ describe('single-request cache pricing', () => {
 
     expect(ContextPricing.aboveTokens(272_000, priced.contextTiers)).toBeNull()
     expect(ContextPricing.aboveTokens(272_001, priced.contextTiers)).toBe(272_000)
-    expect(ContextPricing.bracket(priced, 'auto', ContextPricing.promptTokens('0.272')).inputUsdPerMillion).toBe(2)
-    expect(ContextPricing.bracket(priced, 'auto', ContextPricing.promptTokens('0.272001')).inputUsdPerMillion).toBe(4)
-    expect(ContextPricing.bracket(priced, 'base', 300_000).cacheWriteUsdPerMillion).toBe(2.5)
+    expect(ContextPricing.bracket(priced, ContextPricing.promptTokens('0.272')).inputUsdPerMillion).toBe(2)
+    expect(ContextPricing.bracket(priced, ContextPricing.promptTokens('0.272001')).inputUsdPerMillion).toBe(4)
+    expect(ContextPricing.bracket(priced, 300_000).cacheWriteUsdPerMillion).toBe(5)
   })
 
   it('selects the highest context cliff that the prompt has passed', () => {
@@ -146,7 +146,7 @@ describe('single-request cache pricing', () => {
     expect(ContextPricing.aboveTokens(32_001, tiers)).toBe(32_000)
     expect(ContextPricing.aboveTokens(128_000, tiers)).toBe(32_000)
     expect(ContextPricing.aboveTokens(128_001, tiers)).toBe(128_000)
-    expect(ContextPricing.bracket(priced, 'auto', 128_001).inputUsdPerMillion).toBe(3)
+    expect(ContextPricing.bracket(priced, 128_001).inputUsdPerMillion).toBe(3)
   })
 
   it('uses only durations published on cache_write and ignores invented multipliers', () => {
@@ -172,7 +172,7 @@ describe('single-request cache pricing', () => {
     const bracket = ContextPricing.bracket(source({
       cacheWriteUsdPerMillion: 2.5,
       cacheTtls: mapped?.cacheTtls,
-    }), 'base', 1)
+    }), 1)
     expect(CacheTtlPricing.writeUsd(bracket, '1h')).toBe(4)
     expect(CacheTtlPricing.writeUsd(bracket, 'anthropic-1h')).toBe(2.5)
     expect(CacheTtlPricing.writeUsd(bracket, 'catalog')).toBe(2.5)
@@ -234,6 +234,88 @@ describe('single-request cache pricing', () => {
     expect(result.ok).toBe(true)
     if (!result.ok) return
     expect(calculateCost(result.value).totalCost).toBeCloseTo(13.755)
+  })
+
+  it('prices a saved manual context tier from the input token count', () => {
+    const source = {
+      providerId: 'openai',
+      providerName: 'OpenAI',
+      modelId: 'gpt-6.1-sol',
+      modelName: 'GPT-6.1 Sol',
+      inputUsdPerMillion: 2,
+      cacheReadUsdPerMillion: 0.1,
+      cacheWriteUsdPerMillion: 2.5,
+      outputUsdPerMillion: 10,
+      contextTiers: [{
+        aboveTokens: 272000,
+        inputUsdPerMillion: 4,
+        cacheReadUsdPerMillion: 0.2,
+        cacheWriteUsdPerMillion: 5,
+        outputUsdPerMillion: 15,
+      }],
+      lastUpdated: null,
+    }
+    const pinnedHigh = {
+      id: 'pinned-high',
+      name: '钉在高档',
+      inputTokensM: '0.1',
+      cacheHitPercent: '0',
+      cacheWritePercent: '0',
+      outputRatioPercent: '0',
+      cachedPrice: '1.44',
+      cacheWritePrice: '36',
+      uncachedPrice: '28.8',
+      outputPrice: '108',
+      contextTier: '272000',
+      cacheTtlId: '',
+      customTtls: [],
+      modelPriceSource: source,
+    }
+    const pinnedBase = {
+      ...pinnedHigh,
+      id: 'pinned-base',
+      name: '钉在基础档',
+      inputTokensM: '0.3',
+      cachedPrice: '0.72',
+      cacheWritePrice: '18',
+      uncachedPrice: '14.4',
+      outputPrice: '72',
+      contextTier: 'base',
+    }
+    window.localStorage.setItem(STORAGE_KEYS.currency, JSON.stringify({
+      currency: 'CNY',
+      rate: { usdToCny: 7.2, date: '2026-10-23', fetchedAt: 1_790_000_000_000 },
+    }))
+    window.localStorage.setItem(STORAGE_KEYS.scenarios, JSON.stringify({
+      version: 1,
+      scenarios: [pinnedHigh, pinnedBase],
+      activeId: 'pinned-high',
+    }))
+
+    const loaded = loadScenarioState()
+    expect(loaded.status).toBe('loaded')
+    if (loaded.status !== 'loaded') return
+    expect(loaded.state.scenarios.map((scenario) => scenario.contextTier)).toEqual(['auto', 'auto'])
+    expect(loaded.state.scenarios[0]).toMatchObject({
+      cachedPrice: '0.72',
+      cacheWritePrice: '18',
+      uncachedPrice: '14.4',
+      outputPrice: '72',
+    })
+    expect(loaded.state.scenarios[1]).toMatchObject({
+      cachedPrice: '1.44',
+      cacheWritePrice: '36',
+      uncachedPrice: '28.8',
+      outputPrice: '108',
+    })
+
+    window.localStorage.removeItem(STORAGE_KEYS.currency)
+    const withoutRate = loadScenarioState()
+    expect(withoutRate.status).toBe('loaded')
+    if (withoutRate.status !== 'loaded') return
+    expect(withoutRate.state.scenarios[0].contextTier).toBe('auto')
+    expect(withoutRate.state.scenarios[0].uncachedPrice).toBe('28.8')
+    expect(withoutRate.state.scenarios[1].uncachedPrice).toBe('14.4')
   })
 })
 

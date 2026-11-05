@@ -30,8 +30,8 @@ describe('R2 scenario management', () => {
     expect(fieldInput('缓存输入')).toHaveValue('0.02')
     expect(fieldInput('未缓存输入')).toHaveValue('2')
     expect(fieldInput('输出')).toHaveValue('4')
-    expect(scenarioCard('方案 3')).toHaveTextContent('¥11.94')
-    expect(scenarioCard('方案 2')).toHaveTextContent('¥11.94')
+    expect(scenarioCard('方案 3')).toHaveTextContent('¥7.88')
+    expect(scenarioCard('方案 2')).toHaveTextContent('¥7.88')
   })
 
   it('names the copy with the smallest unused 方案 N', async () => {

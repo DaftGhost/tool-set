@@ -22,7 +22,6 @@ export type ScenarioAction =
   | { type: 'setName'; value: string }
   | { type: 'link'; source: ModelPriceSource; usdToCny: number }
   | { type: 'unlink' }
-  | { type: 'setContextTier'; value: string; usdToCny: number }
   | { type: 'setCacheTtl'; id: string; usdToCny: number }
   | { type: 'add'; scenario: ScenarioDraft }
   | { type: 'remove'; id: string }
@@ -34,19 +33,11 @@ export function activeIndexOf(scenarios: readonly ScenarioDraft[], activeId: str
   return index >= 0 ? index : 0
 }
 
-function compactPrice(value: number): string {
-  return Number(value.toPrecision(15)).toString()
-}
-
 function applyCatalogPrices(scenario: ScenarioDraft, source: ModelPriceSource, usdToCny: number): ScenarioDraft {
-  const bracket = ContextPricing.bracket(source, scenario.contextTier, ContextPricing.promptTokens(scenario.inputTokensM))
-  const writeUsd = CacheTtlPricing.writeUsd(bracket, scenario.cacheTtlId)
   return {
     ...scenario,
-    cachedPrice: compactPrice(bracket.cacheReadUsdPerMillion * usdToCny),
-    uncachedPrice: compactPrice(bracket.inputUsdPerMillion * usdToCny),
-    outputPrice: compactPrice(bracket.outputUsdPerMillion * usdToCny),
-    cacheWritePrice: compactPrice(writeUsd * usdToCny),
+    contextTier: 'auto',
+    ...ContextPricing.catalogPrices(source, ContextPricing.promptTokens(scenario.inputTokensM), scenario.cacheTtlId, usdToCny),
   }
 }
 
@@ -70,9 +61,9 @@ export function scenarioReducer(state: ScenarioState, action: ScenarioAction): S
     case 'setField': {
       if (active[action.field] === action.value) return state
       let next: ScenarioDraft = { ...active, [action.field]: action.value }
-      if (action.field === 'inputTokensM' && next.modelPriceSource && next.contextTier === 'auto') {
+      if (action.field === 'inputTokensM' && next.modelPriceSource) {
         const priced = applyCatalogPrices(next, next.modelPriceSource, action.usdToCny)
-        if (!pricesMatch(priced, next)) next = priced
+        if (!pricesMatch(priced, next) || priced.contextTier !== next.contextTier) next = priced
       }
       return changed({ scenarios: replaceAt(state.scenarios, index, next) })
     }
@@ -83,7 +74,7 @@ export function scenarioReducer(state: ScenarioState, action: ScenarioAction): S
     }
     case 'link': {
       const source = normalizeModelPriceSource(action.source)
-      const bracket = ContextPricing.bracket(source, 'auto', ContextPricing.promptTokens(active.inputTokensM))
+      const bracket = ContextPricing.bracket(source, ContextPricing.promptTokens(active.inputTokensM))
       const durations = CacheTtlPricing.choices(bracket.cacheTtls)
       const linked: ScenarioDraft = {
         ...active,
@@ -95,12 +86,6 @@ export function scenarioReducer(state: ScenarioState, action: ScenarioAction): S
       }
       const next = applyCatalogPrices(linked, source, action.usdToCny)
       return changed({ scenarios: replaceAt(state.scenarios, index, next) })
-    }
-    case 'setContextTier': {
-      if (active.contextTier === action.value) return state
-      const next = { ...active, contextTier: action.value }
-      const priced = next.modelPriceSource ? applyCatalogPrices(next, next.modelPriceSource, action.usdToCny) : next
-      return changed({ scenarios: replaceAt(state.scenarios, index, priced) })
     }
     case 'setCacheTtl': {
       if (active.cacheTtlId === action.id) return state

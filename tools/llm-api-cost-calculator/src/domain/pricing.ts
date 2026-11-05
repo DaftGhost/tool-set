@@ -1,4 +1,4 @@
-import type { CacheDurationPrice, ContextTierPrice, ModelPriceSource } from './cost'
+import type { CacheDurationPrice, ContextTierPrice, ModelPriceSource, ScenarioDraft } from './cost'
 import { formatNumber } from './cost'
 
 export type PriceBracket = Readonly<{
@@ -38,10 +38,9 @@ export class ContextPricing {
     return matched
   }
 
-  static bracket(source: ModelPriceSource, contextTier: string, promptTokens: number): PriceBracket {
-    const selected = contextTier === 'auto'
-      ? ContextPricing.aboveTokens(promptTokens, source.contextTiers)
-      : ContextPricing.pinnedTier(contextTier, source.contextTiers)
+  /** The bracket is always the one the prompt has passed. A saved manual tier is not a choice. */
+  static bracket(source: ModelPriceSource, promptTokens: number): PriceBracket {
+    const selected = ContextPricing.aboveTokens(promptTokens, source.contextTiers)
     if (selected === null) return ContextPricing.baseBracket(source)
     const tier = source.contextTiers.find((item) => item.aboveTokens === selected)
     return tier ? ContextPricing.tierBracket(tier) : ContextPricing.baseBracket(source)
@@ -59,18 +58,31 @@ export class ContextPricing {
     return `${formatNumber(tier.aboveTokens + 1, 0)}–${formatNumber(next.aboveTokens, 0)} tokens`
   }
 
-  static activeLabel(source: ModelPriceSource, contextTier: string, promptTokens: number): string {
-    const bracket = ContextPricing.bracket(source, contextTier, promptTokens)
+  static activeLabel(source: ModelPriceSource, promptTokens: number): string {
+    const bracket = ContextPricing.bracket(source, promptTokens)
     if (bracket.aboveTokens === null) return ContextPricing.baseLabel(source.contextTiers)
     const tier = source.contextTiers.find((item) => item.aboveTokens === bracket.aboveTokens)
     return tier ? ContextPricing.tierLabel(tier, source.contextTiers) : ContextPricing.baseLabel(source.contextTiers)
   }
 
-  private static pinnedTier(contextTier: string, tiers: readonly ContextTierPrice[]): number | null {
-    if (contextTier === 'base') return null
-    const size = Number(contextTier)
-    if (!Number.isInteger(size) || size <= 0) return null
-    return tiers.some((tier) => tier.aboveTokens === size) ? size : null
+  static catalogPrices(
+    source: ModelPriceSource,
+    promptTokens: number,
+    ttlId: string,
+    usdToCny: number,
+  ): Pick<ScenarioDraft, 'cachedPrice' | 'cacheWritePrice' | 'uncachedPrice' | 'outputPrice'> {
+    const bracket = ContextPricing.bracket(source, promptTokens)
+    const writeUsd = CacheTtlPricing.writeUsd(bracket, ttlId)
+    return {
+      cachedPrice: ContextPricing.compactPrice(bracket.cacheReadUsdPerMillion * usdToCny),
+      cacheWritePrice: ContextPricing.compactPrice(writeUsd * usdToCny),
+      uncachedPrice: ContextPricing.compactPrice(bracket.inputUsdPerMillion * usdToCny),
+      outputPrice: ContextPricing.compactPrice(bracket.outputUsdPerMillion * usdToCny),
+    }
+  }
+
+  private static compactPrice(value: number): string {
+    return Number(value.toPrecision(15)).toString()
   }
 
   private static baseBracket(source: ModelPriceSource): PriceBracket {
