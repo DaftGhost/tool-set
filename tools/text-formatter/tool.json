@@ -1,0 +1,20 @@
+{
+  "schemaVersion": 1,
+  "kind": "browser",
+  "category": "文本处理",
+  "actionLabel": "格式化",
+  "name": "文本格式化",
+  "summary": "在浏览器里整理 JSON、XML 和 SQL，并保存自己的格式方案。",
+  "dev": {
+    "command": ["pnpm", "run", "dev", "--host", "{host}", "--port", "{port}", "--strictPort", "--base", "{basePath}"],
+    "install": ["pnpm", "install"],
+    "environment": {"TOOL_HMR_CLIENT_PORT": "{rootPort}"},
+    "hmr": true,
+    "watch": ["src", "index.html", "vite.config.ts"]
+  },
+  "build": {
+    "install": ["pnpm", "install", "--frozen-lockfile"],
+    "command": ["pnpm", "run", "build"],
+    "outputDirectory": "dist"
+  }
+}

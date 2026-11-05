@@ -1,0 +1,39 @@
+@layer theme, base, components, utilities;
+
+@import "tailwindcss/theme.css" layer(theme);
+@import "tailwindcss/utilities.css" layer(utilities) source(none);
+
+@source ".";
+
+@import "../../../styles/theme.css";
+@import "../../../styles/base.css";
+
+textarea {
+  font: inherit;
+}
+
+@utility editor-columns {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+
+  @media (width < theme(--breakpoint-stack)) {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+@utility scheme-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+
+  @media (width < theme(--breakpoint-stack)) {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+@utility editor-area {
+  min-height: 280px;
+}
+
+@utility dialog-card {
+  width: min(100%, 480px);
+}
