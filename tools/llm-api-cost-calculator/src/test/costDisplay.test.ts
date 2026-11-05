@@ -74,26 +74,34 @@ describe('R1 cost calculation and display', () => {
     expect(fieldInput('输入 Token')).toHaveAttribute('aria-invalid', 'false')
   })
 
-  it('shows per-field errors and the placeholder for negative tokens and an empty price', async () => {
+  it('rejects a negative token count and treats an empty price as zero', async () => {
     const user = userEvent.setup()
     mountApp()
 
     await typeInto(user, '输入 Token', '-5')
-    await typeInto(user, '缓存输入', '')
 
     expect(fieldInput('输入 Token')).toHaveAttribute('aria-invalid', 'true')
     expect(fieldInput('输入 Token')).toHaveAccessibleDescription('请输入非负数字')
-    expect(fieldInput('缓存输入')).toHaveAccessibleDescription('请输入非负数字')
-    expect(fieldInput('未缓存输入')).toHaveAttribute('aria-invalid', 'false')
     expect(within(summaryPanel()).getByText('完善左侧参数后，这里会显示成本拆分。')).toBeInTheDocument()
     expect(within(summaryPanel()).queryByText('预估总成本')).toBeNull()
     expect(within(scenarioCard('方案 1')).getByText('参数待修正')).toBeInTheDocument()
     expect(within(scenarioCard('方案 1')).getByText('请输入非负数字')).toBeInTheDocument()
     expect(scenarioCard('方案 1')).toHaveTextContent('输入 -5M')
     expect(scenarioCard('方案 2')).toHaveTextContent('¥11.94')
+
+    await typeInto(user, '输入 Token', '1')
+    await typeInto(user, '缓存输入', '')
+
+    expect(fieldInput('缓存输入')).toHaveAttribute('aria-invalid', 'false')
+    expect(fieldInput('未缓存输入')).toHaveAttribute('aria-invalid', 'false')
+    expect(costLineText('缓存命中')).toBe('缓存命中0.97M tokens¥0.00')
+    expect(costLineText('未缓存输入')).toBe('未缓存输入0.03M tokens¥0.012')
+    expect(within(summaryPanel()).getByText('预估总成本').parentElement).toHaveTextContent(/^预估总成本¥0\.026$/)
+    await user.tab()
+    expect(fieldInput('缓存输入')).toHaveValue('0')
   })
 
-  it('reports the cache-hit range error and shows the first error of the card', async () => {
+  it('reports the cache-hit range error on the field and the card', async () => {
     const user = userEvent.setup()
     mountApp()
 
@@ -101,12 +109,10 @@ describe('R1 cost calculation and display', () => {
     await typeInto(user, '未缓存输入', '')
 
     expect(fieldInput('缓存命中率')).toHaveAccessibleDescription('缓存命中率不能超过 100%')
-    expect(fieldInput('未缓存输入')).toHaveAccessibleDescription('请输入非负数字')
+    expect(fieldInput('未缓存输入')).toHaveAttribute('aria-invalid', 'false')
     expect(within(summaryPanel()).getByText('完善左侧参数后，这里会显示成本拆分。')).toBeInTheDocument()
-    // The card shows the first error in insertion order; the empty price is recorded before the cache error.
     expect(within(scenarioCard('方案 1')).getByText('参数待修正')).toBeInTheDocument()
-    expect(within(scenarioCard('方案 1')).getByText('请输入非负数字')).toBeInTheDocument()
-    expect(within(scenarioCard('方案 1')).queryByText('缓存命中率不能超过 100%')).toBeNull()
+    expect(within(scenarioCard('方案 1')).getByText('缓存命中率不能超过 100%')).toBeInTheDocument()
   })
 
   it('converts prices and costs to USD without changing token counts or the name', async () => {
@@ -126,7 +132,7 @@ describe('R1 cost calculation and display', () => {
     expect(fieldInput('缓存输入')).toHaveValue('1')
     expect(fieldInput('未缓存输入')).toHaveValue('2')
     expect(fieldInput('输出')).toHaveValue('5')
-    expect(screen.getAllByText('$ / M')).toHaveLength(3)
+    expect(screen.getAllByText('$ / M')).toHaveLength(4)
     // The catalog options also contain "USD / M tokens", so search inside the 模型单价 heading's section.
     const priceHeading = screen.getByRole('heading', { name: '模型单价' })
     expect(within(priceHeading.parentElement!.parentElement!).getByText('USD / M tokens')).toBeInTheDocument()

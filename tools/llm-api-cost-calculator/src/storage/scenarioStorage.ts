@@ -1,4 +1,4 @@
-import { validateScenarioList } from '../domain/scenarios'
+import { normalizeScenarioDraft, validateScenarioList } from '../domain/scenarios'
 import type { ScenarioDraft } from '../domain/cost'
 
 const STORAGE_KEY = 'tool-set:llm-api-cost-calculator:v1'
@@ -29,7 +29,7 @@ export function loadScenarioState(): LoadResult {
     const record = value as Record<string, unknown>
     if (record.version !== 1 || !validateScenarioList(record.scenarios)) return { status: 'invalid' }
 
-    const scenarios = record.scenarios
+    const scenarios = record.scenarios.map(normalizeScenarioDraft)
     const activeId = typeof record.activeId === 'string' && scenarios.some(({ id }) => id === record.activeId)
       ? record.activeId
       : scenarios[0].id

@@ -49,7 +49,10 @@ function costFor(input: CalculationInput, axis: ChartAxis, value: number): CostB
 export function inputAtAxis(input: CalculationInput, axis: ChartAxis, value: number): CalculationInput {
   switch (axis) {
     case 'cacheHitPercent':
-      return { ...input, cacheHitRate: value / 100 }
+      return {
+        ...input,
+        cacheHitRate: Math.min(Math.max(0, value / 100), Math.max(0, 1 - input.cacheWriteRate)),
+      }
     case 'inputTokensM':
       return { ...input, inputTokens: value * 1_000_000 }
     case 'outputRatioPercent':
@@ -66,7 +69,11 @@ function metricValue(cost: CostBreakdown, metric: CostMetric): number {
 }
 
 function axisRange(entries: readonly ChartEntry[], axis: ChartAxis): number {
-  if (axis === 'cacheHitPercent') return 100
+  if (axis === 'cacheHitPercent') {
+    if (entries.length === 0) return 100
+    const cap = Math.min(...entries.map(({ input }) => (1 - input.cacheWriteRate) * 100))
+    return Math.min(100, Math.max(0, cap))
+  }
   if (axis === 'inputTokensM') {
     return Math.max(1, ...entries.map(({ input }) => input.inputTokens / 1_000_000)) * 1.2
   }

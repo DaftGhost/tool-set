@@ -1,6 +1,6 @@
 import type { ModelCatalogEntry } from '../services/modelCatalog'
 
-const STORAGE_KEY = 'tool-set:llm-api-cost-calculator:model-catalog:v1'
+const STORAGE_KEY = 'tool-set:llm-api-cost-calculator:model-catalog:v2'
 const MAX_CACHED_MODELS = 20_000
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -15,6 +15,31 @@ function isPrice(value: unknown): value is number {
   return typeof value === 'number' && Number.isFinite(value) && value >= 0
 }
 
+function isDurationPrice(value: unknown): boolean {
+  if (!isRecord(value)) return false
+  return typeof value.id === 'string'
+    && value.id.length > 0
+    && value.id.length <= 16
+    && isPrice(value.writeUsdPerMillion)
+}
+
+function isDurationList(value: unknown): boolean {
+  return value === undefined || (Array.isArray(value) && value.length <= 8 && value.every(isDurationPrice))
+}
+
+function isContextTier(value: unknown): boolean {
+  if (!isRecord(value)) return false
+  return typeof value.aboveTokens === 'number'
+    && Number.isInteger(value.aboveTokens)
+    && value.aboveTokens > 0
+    && value.aboveTokens <= 100_000_000
+    && isPrice(value.inputUsdPerMillion)
+    && isPrice(value.cacheReadUsdPerMillion)
+    && isPrice(value.cacheWriteUsdPerMillion)
+    && isPrice(value.outputUsdPerMillion)
+    && isDurationList(value.cacheTtls)
+}
+
 function isModelCatalogEntry(value: unknown): value is ModelCatalogEntry {
   if (!isRecord(value) || typeof value.isFirstParty !== 'boolean' || !isRecord(value.source)) return false
 
@@ -25,7 +50,12 @@ function isModelCatalogEntry(value: unknown): value is ModelCatalogEntry {
     && isName(source.modelName)
     && isPrice(source.inputUsdPerMillion)
     && isPrice(source.cacheReadUsdPerMillion)
+    && isPrice(source.cacheWriteUsdPerMillion)
     && isPrice(source.outputUsdPerMillion)
+    && isDurationList(source.cacheTtls)
+    && Array.isArray(source.contextTiers)
+    && source.contextTiers.length <= 32
+    && source.contextTiers.every(isContextTier)
     && (source.lastUpdated === null || (typeof source.lastUpdated === 'string' && source.lastUpdated.length <= 32))
 }
 
@@ -40,7 +70,7 @@ export function loadModelCatalog(): ModelCatalogEntry[] | null {
 
   try {
     const value: unknown = JSON.parse(serialized)
-    if (!isRecord(value) || value.version !== 1 || !Array.isArray(value.models)) return null
+    if (!isRecord(value) || value.version !== 2 || !Array.isArray(value.models)) return null
     if (value.models.length === 0 || value.models.length > MAX_CACHED_MODELS) return null
     return value.models.every(isModelCatalogEntry) ? value.models : null
   } catch {
@@ -51,7 +81,7 @@ export function loadModelCatalog(): ModelCatalogEntry[] | null {
 export function saveModelCatalog(models: readonly ModelCatalogEntry[]): boolean {
   if (models.length === 0 || models.length > MAX_CACHED_MODELS) return false
   try {
-    window.localStorage.setItem(STORAGE_KEY, JSON.stringify({ version: 1, models }))
+    window.localStorage.setItem(STORAGE_KEY, JSON.stringify({ version: 2, models }))
     return true
   } catch {
     return false

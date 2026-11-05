@@ -4,7 +4,7 @@
 export const STORAGE_KEYS = {
   scenarios: 'tool-set:llm-api-cost-calculator:v1',
   currency: 'tool-set:llm-api-cost-calculator:currency:v1',
-  catalog: 'tool-set:llm-api-cost-calculator:model-catalog:v1',
+  catalog: 'tool-set:llm-api-cost-calculator:model-catalog:v2',
 } as const
 
 // Mirrors the request URLs in src/services/*.ts.
@@ -23,6 +23,10 @@ export type DraftFixture = {
   cachedPrice: string
   uncachedPrice: string
   outputPrice: string
+  cacheWritePercent?: string
+  cacheWritePrice?: string
+  contextTier?: string
+  cacheTtlId?: string
   modelPriceSource?: Record<string, unknown>
 }
 
@@ -65,7 +69,18 @@ const catalogSource = (
   cacheRead: number,
   output: number,
   lastUpdated: string | null,
-) => ({ providerId, providerName, modelId, modelName, inputUsdPerMillion: input, cacheReadUsdPerMillion: cacheRead, outputUsdPerMillion: output, lastUpdated })
+) => ({
+  providerId,
+  providerName,
+  modelId,
+  modelName,
+  inputUsdPerMillion: input,
+  cacheReadUsdPerMillion: cacheRead,
+  cacheWriteUsdPerMillion: 0,
+  outputUsdPerMillion: output,
+  contextTiers: [],
+  lastUpdated,
+})
 
 // Stored model catalog entries, in the order the catalog service sorts them.
 export const cachedCatalogEntries = [
@@ -78,7 +93,7 @@ export const cachedCatalogEntries = [
 ]
 
 export function storeCatalog(): void {
-  window.localStorage.setItem(STORAGE_KEYS.catalog, JSON.stringify({ version: 1, models: cachedCatalogEntries }))
+  window.localStorage.setItem(STORAGE_KEYS.catalog, JSON.stringify({ version: 2, models: cachedCatalogEntries }))
 }
 
 export function storeAllCaches(scenarios: DraftFixture[] = [exampleOne(), exampleTwo()], currency: 'CNY' | 'USD' = 'CNY'): void {

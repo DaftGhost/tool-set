@@ -1,12 +1,13 @@
 import { useState } from 'react'
+import { ContextPricingControls } from './components/ContextPricingControls'
 import { CostBreakdown } from './components/CostBreakdown'
 import { CostChart } from './components/CostChart'
 import { ModelCatalogPicker } from './components/ModelCatalogPicker'
 import { ParameterField } from './components/ParameterField'
 import { ScenarioComparison } from './components/ScenarioComparison'
 import type { ComparisonRow } from './components/ScenarioComparison'
-import { calculateCost, formatNumber, parseScenarioDraft } from './domain/cost'
-import type { ModelPriceSource } from './domain/cost'
+import { RequestPricing, calculateCost, formatNumber, parseScenarioDraft } from './domain/cost'
+import type { DraftField, ModelPriceSource } from './domain/cost'
 import { convertPriceInputToCny, displayPriceInput } from './domain/currency'
 import type { CurrencyCode } from './domain/currency'
 import type { ChartAxis, CostMetric } from './domain/chart'
@@ -14,7 +15,7 @@ import { MAX_SCENARIOS, cloneScenario } from './domain/scenarios'
 import { useExchangeRate } from './useExchangeRate'
 import { activeIndexOf, useScenarioState } from './useScenarioState'
 
-type PriceField = 'cachedPrice' | 'uncachedPrice' | 'outputPrice'
+type PriceField = 'cachedPrice' | 'cacheWritePrice' | 'uncachedPrice' | 'outputPrice'
 type PriceInputDrafts = Record<string, Partial<Record<PriceField, string>>>
 
 export function App() {
@@ -85,10 +86,18 @@ export function App() {
       ...drafts,
       [activeId]: { ...drafts[activeId], [field]: value },
     }))
-    dispatch({ type: 'setField', field, value: convertPriceInputToCny(value, currency, usdToCny) })
+    const stored = value.trim() === '' ? '' : convertPriceInputToCny(value, currency, usdToCny)
+    dispatch({ type: 'setField', field, value: stored, usdToCny })
   }
 
   function finishPriceEdit(...fields: PriceField[]) {
+    const draftsForScenario = priceInputDrafts[activeId]
+    for (const field of fields) {
+      const draft = draftsForScenario?.[field]
+      if (draft !== undefined && draft.trim() === '') {
+        dispatch({ type: 'setField', field, value: '0', usdToCny })
+      }
+    }
     setPriceInputDrafts((drafts) => {
       const next = { ...drafts }
       const activeDrafts = { ...next[activeId] }
@@ -101,7 +110,7 @@ export function App() {
 
   function selectCatalogPrice(source: ModelPriceSource) {
     dispatch({ type: 'link', source, usdToCny })
-    finishPriceEdit('cachedPrice', 'uncachedPrice', 'outputPrice')
+    finishPriceEdit('cachedPrice', 'cacheWritePrice', 'uncachedPrice', 'outputPrice')
   }
 
   function selectCurrency(next: CurrencyCode) {
@@ -127,10 +136,29 @@ export function App() {
     if (scenario) dispatch({ type: 'add', scenario })
   }
 
-  const priceFieldProps = (field: PriceField) => ({
+  function commitBlank(field: DraftField) {
+    if (activeScenario[field].trim() === '') {
+      dispatch({ type: 'setField', field, value: '0', usdToCny })
+    }
+  }
+
+  function shareCap(value: string): number {
+    const parsed = RequestPricing.readNonNegative(value)
+    if (parsed === null) return 0
+    return Math.min(parsed, 100)
+  }
+
+  const hitShare = RequestPricing.readNonNegative(activeScenario.cacheHitPercent)
+  const writeShare = RequestPricing.readNonNegative(activeScenario.cacheWritePercent)
+  const uncachedShare = hitShare !== null && writeShare !== null && hitShare + writeShare <= 100 + 1e-6
+    ? formatNumber(Math.max(0, 100 - hitShare - writeShare), 4)
+    : null
+  const writePriceLocked = Boolean(activeScenario.modelPriceSource)
+
+  const priceFieldProps = (field: PriceField, readOnly = Boolean(activeScenario.modelPriceSource)) => ({
     unit: currency === 'USD' ? '$ / M' : '¥ / M',
     value: priceInputValue(field),
-    readOnly: Boolean(activeScenario.modelPriceSource),
+    readOnly,
     step: 0.01,
     error: activeParsing.ok ? undefined : activeParsing.errors[field],
     onChange: (value: string) => updatePriceField(field, value),
@@ -241,17 +269,8 @@ export function App() {
                 value={activeScenario.inputTokensM}
                 step={1}
                 error={activeParsing.ok ? undefined : activeParsing.errors.inputTokensM}
-                onChange={(value) => dispatch({ type: 'setField', field: 'inputTokensM', value })}
-              />
-              <ParameterField
-                id="cache-hit"
-                label="缓存命中率"
-                unit="%"
-                value={activeScenario.cacheHitPercent}
-                step={1}
-                max={100}
-                error={activeParsing.ok ? undefined : activeParsing.errors.cacheHitPercent}
-                onChange={(value) => dispatch({ type: 'setField', field: 'cacheHitPercent', value })}
+                onChange={(value) => dispatch({ type: 'setField', field: 'inputTokensM', value, usdToCny })}
+                onBlur={() => commitBlank('inputTokensM')}
               />
               <ParameterField
                 id="output-ratio"
@@ -260,9 +279,35 @@ export function App() {
                 value={activeScenario.outputRatioPercent}
                 step={0.5}
                 error={activeParsing.ok ? undefined : activeParsing.errors.outputRatioPercent}
-                onChange={(value) => dispatch({ type: 'setField', field: 'outputRatioPercent', value })}
+                onChange={(value) => dispatch({ type: 'setField', field: 'outputRatioPercent', value, usdToCny })}
+                onBlur={() => commitBlank('outputRatioPercent')}
+              />
+              <ParameterField
+                id="cache-hit"
+                label="缓存命中率"
+                unit="%"
+                value={activeScenario.cacheHitPercent}
+                step={1}
+                max={Math.max(0, 100 - shareCap(activeScenario.cacheWritePercent))}
+                error={activeParsing.ok ? undefined : activeParsing.errors.cacheHitPercent}
+                onChange={(value) => dispatch({ type: 'setField', field: 'cacheHitPercent', value, usdToCny })}
+                onBlur={() => commitBlank('cacheHitPercent')}
+              />
+              <ParameterField
+                id="cache-write"
+                label="缓存写入占比"
+                unit="%"
+                value={activeScenario.cacheWritePercent}
+                step={1}
+                max={Math.max(0, 100 - shareCap(activeScenario.cacheHitPercent))}
+                error={activeParsing.ok ? undefined : activeParsing.errors.cacheWritePercent}
+                onChange={(value) => dispatch({ type: 'setField', field: 'cacheWritePercent', value, usdToCny })}
+                onBlur={() => commitBlank('cacheWritePercent')}
               />
             </div>
+            {uncachedShare !== null && (
+              <p className="m-0 mt-3 text-meta text-quiet">未缓存输入占比 {uncachedShare}%</p>
+            )}
 
             <div className="mt-panel border-t border-line-soft pt-5 max-phone:mt-5 max-phone:pt-4">
               <div className="mb-4 flex items-center justify-between gap-4 max-phone:flex-col max-phone:items-start max-phone:gap-2.5">
@@ -280,8 +325,14 @@ export function App() {
                 onSelect={selectCatalogPrice}
                 onClear={() => dispatch({ type: 'unlink' })}
               />
-              <div className="grid grid-cols-3 gap-3 max-phone:grid-cols-1 max-phone:gap-3">
+              <ContextPricingControls
+                scenario={activeScenario}
+                onContextTier={(value) => dispatch({ type: 'setContextTier', value, usdToCny })}
+                onCacheTtl={(id) => dispatch({ type: 'setCacheTtl', id, usdToCny })}
+              />
+              <div className="grid grid-cols-2 gap-3 max-phone:grid-cols-1 max-phone:gap-3">
                 <ParameterField id="cached-price" label="缓存输入" compact {...priceFieldProps('cachedPrice')} />
+                <ParameterField id="cache-write-price" label="缓存写入" compact {...priceFieldProps('cacheWritePrice', writePriceLocked)} />
                 <ParameterField id="uncached-price" label="未缓存输入" compact {...priceFieldProps('uncachedPrice')} />
                 <ParameterField id="output-price" label="输出" compact {...priceFieldProps('outputPrice')} />
               </div>
