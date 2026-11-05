@@ -120,7 +120,7 @@ describe('R4 exchange rate and model catalog requests', () => {
     expect(screen.getByRole('button', { name: 'CNY' })).toHaveAttribute('aria-pressed', 'true')
     expect(screen.getByRole('button', { name: '刷新 USD/CNY 参考汇率' })).toBeEnabled()
     expect(within(screen.getByRole('region', { name: '成本拆分' })).queryByText('完善左侧参数后，这里会显示成本拆分。')).toBeNull()
-    expect(within(screen.getByRole('region', { name: '成本拆分' })).getByText('预估总成本').parentElement).toHaveTextContent('¥13.755')
+    expect(within(screen.getByRole('region', { name: '成本拆分' })).getByText('预估总成本').parentElement).toHaveTextContent('¥12.61')
   })
 
   it('starts only one rate request for two rapid refresh clicks', async () => {

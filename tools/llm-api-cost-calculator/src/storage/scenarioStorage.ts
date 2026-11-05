@@ -1,5 +1,6 @@
 import { normalizeScenarioDraft, validateScenarioList } from '../domain/scenarios'
 import type { ScenarioDraft } from '../domain/cost'
+import { loadCurrencyPreferences } from './currencyStorage'
 
 const STORAGE_KEY = 'tool-set:llm-api-cost-calculator:v1'
 
@@ -29,7 +30,8 @@ export function loadScenarioState(): LoadResult {
     const record = value as Record<string, unknown>
     if (record.version !== 1 || !validateScenarioList(record.scenarios)) return { status: 'invalid' }
 
-    const scenarios = record.scenarios.map(normalizeScenarioDraft)
+    const usdToCny = loadCurrencyPreferences()?.rate?.usdToCny
+    const scenarios = record.scenarios.map((scenario) => normalizeScenarioDraft(scenario, usdToCny))
     const activeId = typeof record.activeId === 'string' && scenarios.some(({ id }) => id === record.activeId)
       ? record.activeId
       : scenarios[0].id

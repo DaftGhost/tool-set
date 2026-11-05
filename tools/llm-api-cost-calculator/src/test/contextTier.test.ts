@@ -81,7 +81,7 @@ beforeEach(() => {
 })
 
 describe('context tier and cache TTL pricing', () => {
-  it('prices one bracket for the whole request and a longer write TTL on top of it', async () => {
+  it('prices one automatic bracket for the whole request', async () => {
     const user = userEvent.setup()
     mountApp()
     expect(await screen.findByText(/已载入 2 个可选模型/)).toBeInTheDocument()
@@ -92,8 +92,8 @@ describe('context tier and cache TTL pricing', () => {
     expect(fieldInput('缓存输入')).toHaveValue('0.72')
     expect(fieldInput('缓存写入')).toHaveValue('18')
     expect(fieldInput('输出')).toHaveValue('72')
-    expect(screen.getByLabelText('上下文档位')).toHaveValue('base')
-    expect(optionLabels(screen.getByLabelText('上下文档位'))).toEqual(['不超过 272,000 tokens', '超过 272,000 tokens'])
+    expect(screen.queryByLabelText('上下文档位')).toBeNull()
+    expect(screen.getByText('不超过 272,000 tokens。整段请求使用这一档单价。')).toBeInTheDocument()
     expect(screen.queryByLabelText('缓存时长')).toBeNull()
     expect(screen.queryByRole('button', { name: '添加时长' })).toBeNull()
     expect(screen.queryByText(/目录默认|catalog default/i)).toBeNull()
@@ -105,13 +105,14 @@ describe('context tier and cache TTL pricing', () => {
     expect(fieldInput('缓存输入')).toHaveValue('1.44')
     expect(fieldInput('缓存写入')).toHaveValue('36')
     expect(fieldInput('输出')).toHaveValue('108')
+    expect(screen.getByText('超过 272,000 tokens。整段请求使用这一档单价。')).toBeInTheDocument()
 
-    await user.selectOptions(screen.getByLabelText('上下文档位'), 'base')
-    expect(fieldInput('输入 Token')).toHaveValue('0.272001')
+    await user.clear(fieldInput('输入 Token'))
+    await user.type(fieldInput('输入 Token'), '0.272')
     expect(fieldInput('未缓存输入')).toHaveValue('14.4')
     expect(fieldInput('缓存写入')).toHaveValue('18')
+    expect(screen.getByText('不超过 272,000 tokens。整段请求使用这一档单价。')).toBeInTheDocument()
 
-    await user.selectOptions(screen.getByLabelText('上下文档位'), '272000')
     await user.clear(fieldInput('输入 Token'))
     await user.type(fieldInput('输入 Token'), '0.3')
     await user.clear(fieldInput('缓存命中率'))

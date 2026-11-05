@@ -327,7 +327,6 @@ export function App() {
               />
               <ContextPricingControls
                 scenario={activeScenario}
-                onContextTier={(value) => dispatch({ type: 'setContextTier', value, usdToCny })}
                 onCacheTtl={(id) => dispatch({ type: 'setCacheTtl', id, usdToCny })}
               />
               <div className="grid grid-cols-2 gap-3 max-phone:grid-cols-1 max-phone:gap-3">

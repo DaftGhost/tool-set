@@ -44,7 +44,7 @@ export function draft(id: string, name: string, overrides: Partial<DraftFixture>
   }
 }
 
-// Same values as the built-in example scenarios in domain/scenarios.ts.
+// Stored-scenario samples. Built-in examples, including the 94/5 cache split, live in domain/scenarios.ts.
 export const exampleOne = (): DraftFixture => draft('example-1', '方案 1')
 export const exampleTwo = (): DraftFixture => draft('example-2', '方案 2', {
   cachedPrice: '0.02',
