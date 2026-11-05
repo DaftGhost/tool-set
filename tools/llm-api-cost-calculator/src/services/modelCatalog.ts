@@ -1,4 +1,4 @@
-import type { ModelPriceSource } from '../domain/cost'
+import type { ContextTierPrice, ModelPriceSource } from '../domain/cost'
 
 const MODELS_DEV_API = 'https://models.dev/catalog.json'
 
@@ -31,6 +31,79 @@ function isPrice(value: unknown): value is number {
 
 function isName(value: unknown): value is string {
   return typeof value === 'string' && value.trim().length > 0 && value.length <= 160
+}
+
+type BasePrices = Readonly<{
+  inputUsdPerMillion: number
+  outputUsdPerMillion: number
+  cacheReadUsdPerMillion: number
+  cacheWriteUsdPerMillion: number
+}>
+
+/** Reads models.dev cost objects, including context tiers with nested cache prices. */
+export class CatalogCost {
+  static read(cost: unknown): (BasePrices & { contextTiers: ContextTierPrice[] }) | null {
+    if (!isRecord(cost) || !isPrice(cost.input) || !isPrice(cost.output)) return null
+    if (cost.cache_read != null && !isPrice(cost.cache_read)) return null
+
+    const base: BasePrices = {
+      inputUsdPerMillion: cost.input,
+      outputUsdPerMillion: cost.output,
+      cacheReadUsdPerMillion: isPrice(cost.cache_read) ? cost.cache_read : cost.input,
+      cacheWriteUsdPerMillion: isPrice(cost.cache_write) ? cost.cache_write : 0,
+    }
+    return { ...base, contextTiers: CatalogCost.tiers(cost, base) }
+  }
+
+  static tiers(cost: Record<string, unknown>, base: BasePrices): ContextTierPrice[] {
+    const collected: ContextTierPrice[] = []
+    const seen = new Set<number>()
+    const rawTiers = Array.isArray(cost.tiers) ? cost.tiers : []
+    for (const raw of rawTiers) {
+      const tier = CatalogCost.contextTier(raw, base)
+      if (!tier || seen.has(tier.aboveTokens)) continue
+      seen.add(tier.aboveTokens)
+      collected.push(tier)
+    }
+
+    // context_over_200k repeats the tiered long-context price under an older 200k name.
+    // When cost.tiers already has a context cliff, that list is the threshold.
+    if (collected.length === 0 && isRecord(cost.context_over_200k)) {
+      const legacy = CatalogCost.contextTier({
+        ...cost.context_over_200k,
+        tier: { type: 'context', size: 200_000 },
+      }, base)
+      if (legacy) collected.push(legacy)
+    }
+
+    collected.sort((left, right) => left.aboveTokens - right.aboveTokens)
+    return collected
+  }
+
+  static contextTier(raw: unknown, base: BasePrices): ContextTierPrice | null {
+    if (!isRecord(raw) || !isRecord(raw.tier) || raw.tier.type !== 'context') return null
+    const size = raw.tier.size
+    if (typeof size !== 'number' || !Number.isInteger(size) || size <= 0 || size > 100_000_000) return null
+    if (!CatalogCost.hasBillablePrice(raw)) return null
+
+    return {
+      aboveTokens: size,
+      inputUsdPerMillion: CatalogCost.priceOr(raw.input, base.inputUsdPerMillion),
+      outputUsdPerMillion: CatalogCost.priceOr(raw.output, base.outputUsdPerMillion),
+      cacheReadUsdPerMillion: CatalogCost.priceOr(raw.cache_read, base.cacheReadUsdPerMillion),
+      cacheWriteUsdPerMillion: CatalogCost.priceOr(raw.cache_write, base.cacheWriteUsdPerMillion),
+    }
+  }
+
+  static hasBillablePrice(raw: Record<string, unknown>): boolean {
+    const keys = ['input', 'output', 'cache_read', 'cache_write'] as const
+    const present = keys.filter((key) => raw[key] !== undefined)
+    return present.some((key) => isPrice(raw[key]) && raw[key] > 0)
+  }
+
+  static priceOr(value: unknown, fallback: number): number {
+    return isPrice(value) ? value : fallback
+  }
 }
 
 function supportsText(value: unknown): boolean {
@@ -103,10 +176,8 @@ export async function fetchModelCatalog(): Promise<ModelCatalogEntry[]> {
       if (!isName(modelId) || !isRecord(rawModel) || !isName(rawModel.name) || rawModel.status === 'deprecated') continue
       if (!isRecord(rawModel.cost) || !supportsText(rawModel.modalities)) continue
 
-      const input = rawModel.cost.input
-      const output = rawModel.cost.output
-      const cacheRead = rawModel.cost.cache_read
-      if (!isPrice(input) || !isPrice(output) || (cacheRead != null && !isPrice(cacheRead))) continue
+      const priced = CatalogCost.read(rawModel.cost)
+      if (!priced) continue
 
       const modelLab = findModelLab(modelId, rawModel, labsById, labsByFamily)
       const providerLab = PROVIDER_LAB_ALIASES.get(providerId) ?? providerId
@@ -116,9 +187,11 @@ export async function fetchModelCatalog(): Promise<ModelCatalogEntry[]> {
           providerName: rawProvider.name,
           modelId,
           modelName: rawModel.name,
-          inputUsdPerMillion: input,
-          cacheReadUsdPerMillion: cacheRead ?? input,
-          outputUsdPerMillion: output,
+          inputUsdPerMillion: priced.inputUsdPerMillion,
+          cacheReadUsdPerMillion: priced.cacheReadUsdPerMillion,
+          cacheWriteUsdPerMillion: priced.cacheWriteUsdPerMillion,
+          outputUsdPerMillion: priced.outputUsdPerMillion,
+          contextTiers: priced.contextTiers,
           lastUpdated: typeof rawModel.last_updated === 'string' && rawModel.last_updated.length <= 32
             ? rawModel.last_updated
             : null,

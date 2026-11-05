@@ -9,7 +9,7 @@ type CostBreakdownProps = {
   usdToCny: number
 }
 
-type CostDot = 'input' | 'cached' | 'uncached' | 'output'
+type CostDot = 'input' | 'cached' | 'write' | 'uncached' | 'output'
 
 function CostLine({
   title,
@@ -28,9 +28,11 @@ function CostLine({
     ? 'size-2 shrink-0 rounded-full bg-ink'
     : dot === 'cached'
       ? 'size-2 shrink-0 rounded-full bg-primary'
-      : dot === 'uncached'
-        ? 'size-2 shrink-0 rounded-full bg-clay'
-        : 'size-2 shrink-0 rounded-full bg-brass'
+      : dot === 'write'
+        ? 'size-2 shrink-0 rounded-full bg-primary-deep'
+        : dot === 'uncached'
+          ? 'size-2 shrink-0 rounded-full bg-clay'
+          : 'size-2 shrink-0 rounded-full bg-brass'
 
   return (
     <div className={sub
@@ -54,14 +56,24 @@ export function CostBreakdown({ result, currency, usdToCny }: CostBreakdownProps
   const pieces = !result || total === 0
     ? [
         { key: 'cached', color: 'cached' as const, width: 0 },
+        { key: 'write', color: 'write' as const, width: 0 },
         { key: 'uncached', color: 'uncached' as const, width: 0 },
         { key: 'output', color: 'output' as const, width: 0 },
       ]
     : [
         { key: 'cached', color: 'cached' as const, width: result.cachedCost / total * 100 },
+        { key: 'write', color: 'write' as const, width: result.cacheWriteCost / total * 100 },
         { key: 'uncached', color: 'uncached' as const, width: result.uncachedCost / total * 100 },
         { key: 'output', color: 'output' as const, width: result.outputCost / total * 100 },
       ]
+  const barLabel = result
+    ? [
+        `缓存输入 ${money(result.cachedCost)}`,
+        ...(result.cacheWriteCost !== 0 ? [`缓存写入 ${money(result.cacheWriteCost)}`] : []),
+        `未缓存输入 ${money(result.uncachedCost)}`,
+        `输出 ${money(result.outputCost)}`,
+      ].join('，')
+    : ''
 
   return (
     <section className="relative flex flex-col overflow-hidden rounded-panel border border-line bg-surface px-panel pb-5 pt-panel shadow-panel max-phone:px-4 max-phone:pb-4 max-phone:pt-5" aria-labelledby="summary-title">
@@ -84,16 +96,18 @@ export function CostBreakdown({ result, currency, usdToCny }: CostBreakdownProps
           <div
             className="mx-px my-5 flex h-2 gap-1 overflow-hidden rounded-full bg-surface-alt max-phone:mb-2.5 max-phone:mt-4"
             role="img"
-            aria-label={`缓存输入 ${money(result.cachedCost)}，未缓存输入 ${money(result.uncachedCost)}，输出 ${money(result.outputCost)}`}
+            aria-label={barLabel}
           >
-            {pieces.map((piece) => (
+            {pieces.filter((piece) => piece.width > 0).map((piece) => (
               <span
                 key={piece.key}
                 className={piece.color === 'cached'
                   ? 'min-w-0 rounded-full bg-primary'
-                  : piece.color === 'uncached'
-                    ? 'min-w-0 rounded-full bg-clay'
-                    : 'min-w-0 rounded-full bg-brass'}
+                  : piece.color === 'write'
+                    ? 'min-w-0 rounded-full bg-primary-deep'
+                    : piece.color === 'uncached'
+                      ? 'min-w-0 rounded-full bg-clay'
+                      : 'min-w-0 rounded-full bg-brass'}
                 style={{ width: `${piece.width}%` }}
               />
             ))}
@@ -102,6 +116,7 @@ export function CostBreakdown({ result, currency, usdToCny }: CostBreakdownProps
           <div>
             <CostLine title="输入成本" detail={`${formatNumber(result.inputTokens / 1_000_000)}M tokens`} amount={money(result.inputCost)} dot="input" />
             <CostLine title="缓存命中" detail={`${formatNumber(result.cachedTokens / 1_000_000)}M tokens`} amount={money(result.cachedCost)} dot="cached" sub />
+            <CostLine title="缓存写入" detail={`${formatNumber(result.cacheWriteTokens / 1_000_000)}M tokens`} amount={money(result.cacheWriteCost)} dot="write" sub />
             <CostLine title="未缓存输入" detail={`${formatNumber(result.uncachedTokens / 1_000_000)}M tokens`} amount={money(result.uncachedCost)} dot="uncached" sub />
             <CostLine title="输出成本" detail={`${formatNumber(result.outputTokens / 1_000_000)}M tokens`} amount={money(result.outputCost)} dot="output" />
           </div>

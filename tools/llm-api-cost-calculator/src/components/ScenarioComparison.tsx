@@ -96,6 +96,9 @@ export function ScenarioComparison({
               <div className="mt-3 ml-section flex flex-wrap gap-1.5 max-phone:mt-2">
                 <span className={selected ? 'rounded-badge bg-primary-soft px-1.5 py-1 font-mono text-micro text-primary-deep' : 'rounded-badge bg-surface-alt px-1.5 py-1 font-mono text-micro text-muted'}>输入 {row.draft.inputTokensM || '—'}M</span>
                 <span className={selected ? 'rounded-badge bg-primary-soft px-1.5 py-1 font-mono text-micro text-primary-deep' : 'rounded-badge bg-surface-alt px-1.5 py-1 font-mono text-micro text-muted'}>缓存 {row.draft.cacheHitPercent || '—'}%</span>
+                {row.draft.cacheWritePercent && row.draft.cacheWritePercent !== '0' && (
+                  <span className={selected ? 'rounded-badge bg-primary-soft px-1.5 py-1 font-mono text-micro text-primary-deep' : 'rounded-badge bg-surface-alt px-1.5 py-1 font-mono text-micro text-muted'}>写入 {row.draft.cacheWritePercent}%</span>
+                )}
                 <span className={selected ? 'rounded-badge bg-primary-soft px-1.5 py-1 font-mono text-micro text-primary-deep' : 'rounded-badge bg-surface-alt px-1.5 py-1 font-mono text-micro text-muted'}>输出比 {row.draft.outputRatioPercent || '—'}%</span>
               </div>
               {errorMessages.length > 0 && <p className="m-0 mt-2 ml-section text-meta text-danger">{errorMessages[0]}</p>}

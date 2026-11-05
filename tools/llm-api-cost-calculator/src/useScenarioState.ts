@@ -1,6 +1,7 @@
 import { useEffect, useReducer, useState } from 'react'
 import type { DraftField, ModelPriceSource, ScenarioDraft } from './domain/cost'
-import { exampleScenarios } from './domain/scenarios'
+import { ContextPricing, CacheTtlPricing } from './domain/pricing'
+import { MAX_CUSTOM_TTLS, exampleScenarios, normalizeModelPriceSource } from './domain/scenarios'
 import { loadScenarioState, saveScenarioState } from './storage/scenarioStorage'
 import type { LoadResult } from './storage/scenarioStorage'
 
@@ -17,10 +18,15 @@ export type ScenarioState = Readonly<{
 }>
 
 export type ScenarioAction =
-  | { type: 'setField'; field: DraftField; value: string }
+  | { type: 'setField'; field: DraftField; value: string; usdToCny: number }
   | { type: 'setName'; value: string }
   | { type: 'link'; source: ModelPriceSource; usdToCny: number }
   | { type: 'unlink' }
+  | { type: 'setContextTier'; value: string; usdToCny: number }
+  | { type: 'setCacheTtl'; id: string; usdToCny: number }
+  | { type: 'addCustomTtl' }
+  | { type: 'renameCustomTtl'; id: string; label: string }
+  | { type: 'removeCustomTtl'; id: string; usdToCny: number }
   | { type: 'add'; scenario: ScenarioDraft }
   | { type: 'remove'; id: string }
   | { type: 'select'; id: string }
@@ -36,12 +42,34 @@ function compactPrice(value: number): string {
 }
 
 function applyCatalogPrices(scenario: ScenarioDraft, source: ModelPriceSource, usdToCny: number): ScenarioDraft {
+  const bracket = ContextPricing.bracket(source, scenario.contextTier, ContextPricing.promptTokens(scenario.inputTokensM))
+  const writeUsd = CacheTtlPricing.writeUsd(source.providerId, bracket, scenario.cacheTtlId)
   return {
     ...scenario,
-    cachedPrice: compactPrice(source.cacheReadUsdPerMillion * usdToCny),
-    uncachedPrice: compactPrice(source.inputUsdPerMillion * usdToCny),
-    outputPrice: compactPrice(source.outputUsdPerMillion * usdToCny),
+    cachedPrice: compactPrice(bracket.cacheReadUsdPerMillion * usdToCny),
+    uncachedPrice: compactPrice(bracket.inputUsdPerMillion * usdToCny),
+    outputPrice: compactPrice(bracket.outputUsdPerMillion * usdToCny),
+    cacheWritePrice: writeUsd === null ? scenario.cacheWritePrice : compactPrice(writeUsd * usdToCny),
   }
+}
+
+function pricesMatch(left: ScenarioDraft, right: ScenarioDraft): boolean {
+  return left.cachedPrice === right.cachedPrice
+    && left.cacheWritePrice === right.cacheWritePrice
+    && left.uncachedPrice === right.uncachedPrice
+    && left.outputPrice === right.outputPrice
+}
+
+function nextCustomLabel(scenario: ScenarioDraft): string {
+  const used = new Set(scenario.customTtls.map((row) => row.label))
+  if (!used.has('自定义')) return '自定义'
+  let number = 2
+  while (used.has(`自定义 ${number}`)) number += 1
+  return `自定义 ${number}`
+}
+
+function nextCustomId(): string {
+  return `ttl-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`
 }
 
 function replaceAt(scenarios: ScenarioDraft[], index: number, next: ScenarioDraft): ScenarioDraft[] {
@@ -56,7 +84,17 @@ export function scenarioReducer(state: ScenarioState, action: ScenarioAction): S
   switch (action.type) {
     case 'setField': {
       if (active[action.field] === action.value) return state
-      const next = { ...active, [action.field]: action.value }
+      let next: ScenarioDraft = { ...active, [action.field]: action.value }
+      if (action.field === 'cacheWritePrice') {
+        next = {
+          ...next,
+          customTtls: next.customTtls.map((row) => row.id === next.cacheTtlId ? { ...row, writePrice: action.value } : row),
+        }
+      }
+      if (action.field === 'inputTokensM' && next.modelPriceSource && next.contextTier === 'auto') {
+        const priced = applyCatalogPrices(next, next.modelPriceSource, action.usdToCny)
+        if (!pricesMatch(priced, next)) next = priced
+      }
       return changed({ scenarios: replaceAt(state.scenarios, index, next) })
     }
     case 'setName': {
@@ -65,13 +103,65 @@ export function scenarioReducer(state: ScenarioState, action: ScenarioAction): S
       return changed({ scenarios: replaceAt(state.scenarios, index, { ...active, name }) })
     }
     case 'link': {
-      const linked = {
+      const source = normalizeModelPriceSource(action.source)
+      const bracket = ContextPricing.bracket(source, 'auto', ContextPricing.promptTokens(active.inputTokensM))
+      const linked: ScenarioDraft = {
         ...active,
-        modelPriceSource: { ...action.source },
-        name: `${action.source.providerName} · ${action.source.modelName}`.slice(0, 32),
+        modelPriceSource: source,
+        name: `${source.providerName} · ${source.modelName}`.slice(0, 32),
+        contextTier: 'auto',
+        cacheTtlId: 'catalog',
+        cacheWritePercent: bracket.cacheWriteUsdPerMillion === 0 ? '0' : active.cacheWritePercent,
       }
-      const next = applyCatalogPrices(linked, action.source, action.usdToCny)
+      const next = applyCatalogPrices(linked, source, action.usdToCny)
       return changed({ scenarios: replaceAt(state.scenarios, index, next) })
+    }
+    case 'setContextTier': {
+      if (active.contextTier === action.value) return state
+      const next = { ...active, contextTier: action.value }
+      const priced = next.modelPriceSource ? applyCatalogPrices(next, next.modelPriceSource, action.usdToCny) : next
+      return changed({ scenarios: replaceAt(state.scenarios, index, priced) })
+    }
+    case 'setCacheTtl': {
+      if (active.cacheTtlId === action.id) return state
+      const custom = active.customTtls.find((row) => row.id === action.id)
+      const next: ScenarioDraft = {
+        ...active,
+        cacheTtlId: action.id,
+        cacheWritePrice: custom ? custom.writePrice : active.cacheWritePrice,
+      }
+      const priced = next.modelPriceSource && !custom
+        ? applyCatalogPrices(next, next.modelPriceSource, action.usdToCny)
+        : next
+      return changed({ scenarios: replaceAt(state.scenarios, index, priced) })
+    }
+    case 'addCustomTtl': {
+      if (active.customTtls.length >= MAX_CUSTOM_TTLS) return state
+      const row = { id: nextCustomId(), label: nextCustomLabel(active), writePrice: active.cacheWritePrice }
+      const next = { ...active, customTtls: [...active.customTtls, row], cacheTtlId: row.id }
+      return changed({ scenarios: replaceAt(state.scenarios, index, next) })
+    }
+    case 'renameCustomTtl': {
+      const label = action.label.slice(0, 32)
+      const next = {
+        ...active,
+        customTtls: active.customTtls.map((row) => row.id === action.id ? { ...row, label } : row),
+      }
+      const changedRow = active.customTtls.some((row) => row.id === action.id && row.label !== label)
+      if (!changedRow) return state
+      return changed({ scenarios: replaceAt(state.scenarios, index, next) })
+    }
+    case 'removeCustomTtl': {
+      if (!active.customTtls.some((row) => row.id === action.id)) return state
+      const next: ScenarioDraft = {
+        ...active,
+        customTtls: active.customTtls.filter((row) => row.id !== action.id),
+        cacheTtlId: active.cacheTtlId === action.id ? 'catalog' : active.cacheTtlId,
+      }
+      const priced = next.modelPriceSource && next.cacheTtlId === 'catalog'
+        ? applyCatalogPrices(next, next.modelPriceSource, action.usdToCny)
+        : next
+      return changed({ scenarios: replaceAt(state.scenarios, index, priced) })
     }
     case 'unlink': {
       if (!active.modelPriceSource) return state
@@ -101,10 +191,7 @@ export function scenarioReducer(state: ScenarioState, action: ScenarioAction): S
       const scenarios = state.scenarios.map((scenario) => {
         if (!scenario.modelPriceSource) return scenario
         const next = applyCatalogPrices(scenario, scenario.modelPriceSource, action.usdToCny)
-        const same = next.cachedPrice === scenario.cachedPrice
-          && next.uncachedPrice === scenario.uncachedPrice
-          && next.outputPrice === scenario.outputPrice
-        if (same) return scenario
+        if (pricesMatch(next, scenario)) return scenario
         differs = true
         return next
       })

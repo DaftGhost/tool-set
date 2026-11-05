@@ -133,6 +133,7 @@ describe('R2 scenario management', () => {
     expect(within(scenarioCard('方案 2')).getByText('最低')).toBeInTheDocument()
 
     await user.clear(fieldInput('缓存输入'))
+    await user.type(fieldInput('缓存输入'), '-1')
     expect(screen.queryByText('最低')).toBeNull()
     expect(scenarioCard('方案 1')).toHaveTextContent('参数待修正')
   })
