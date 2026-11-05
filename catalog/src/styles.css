@@ -8,18 +8,12 @@
 @import "../../styles/theme.css";
 @import "../../styles/base.css";
 
-@utility catalog-chip {
-  display: flex;
-  width: max-content;
-  max-width: min(100%, 240px);
-  flex-direction: column;
-  align-items: flex-start;
-  gap: var(--spacing-1);
-}
+@utility catalog-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--spacing-4);
 
-@utility catalog-chip-row {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: stretch;
-  gap: var(--spacing-2);
+  @media (width < theme(--breakpoint-phone)) {
+    grid-template-columns: minmax(0, 1fr);
+  }
 }
