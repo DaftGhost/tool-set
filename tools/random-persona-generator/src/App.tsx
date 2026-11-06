@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
+import { BrowserClipboard } from '../../../shared/browser-clipboard/browserClipboard.ts'
 import { HomeOrb } from '../../../shared/home-orb/HomeOrb.tsx'
 import type { PersonaSnapshot } from './dataContract.ts'
 import { formatCharacterSheet, presentPersona } from './persona.ts'
@@ -7,14 +8,11 @@ import { fetchPersona, PersonaReadError } from './personaClient.ts'
 import { clearHistory, historyLimit, loadHistory, rememberPersona, saveHistory } from './personaHistory.ts'
 import type { HistoryEntry } from './personaHistory.ts'
 
+const clipboard = new BrowserClipboard()
+
 interface Props {
   loadPersona?: () => Promise<PersonaSnapshot>
   copyText?: (text: string) => Promise<void>
-}
-
-async function copyCharacterSheet(text: string) {
-  if (!navigator.clipboard?.writeText) throw new Error('Clipboard unavailable')
-  await navigator.clipboard.writeText(text)
 }
 
 function DrawIcon() {
@@ -46,7 +44,7 @@ function CharacterContent({ persona }: { persona: PersonaPresentation }) {
   </div>
 }
 
-export function RandomPersonaGenerator({ loadPersona = fetchPersona, copyText = copyCharacterSheet }: Props) {
+export function RandomPersonaGenerator({ loadPersona = fetchPersona, copyText = (text) => clipboard.copy(text) }: Props) {
   const [history, setHistory] = useState(loadHistory)
   const [snapshot, setSnapshot] = useState<PersonaSnapshot | null>(() => history.entries[0]?.snapshot ?? null)
   const [loading, setLoading] = useState(false)

@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
+import { BrowserClipboard, type ClipboardPort } from '../../../shared/browser-clipboard/browserClipboard'
 import { HomeOrb } from '../../../shared/home-orb/HomeOrb'
-import { BrowserClipboard, type ClipboardPort } from './browser/clipboard'
+import { FormatterButtons } from './components/formatterButtons'
 import { EditorField, ResultDialog } from './components/ResultDialog'
 import { SchemeBoard } from './components/SchemeBoard'
 import { SchemeDialog } from './components/SchemeDialog'
@@ -28,8 +29,6 @@ type DialogState =
   | { mode: 'edit'; scheme: FormatScheme }
   | null
 
-const primaryButton = 'inline-flex min-h-control cursor-pointer items-center justify-center rounded-control border border-primary bg-primary px-4 text-label font-bold text-on-deep transition-colors enabled:hover:border-primary-deep enabled:hover:bg-primary-deep disabled:cursor-not-allowed disabled:opacity-55'
-const quietButton = 'inline-flex min-h-control cursor-pointer items-center justify-center rounded-control border border-line bg-primary-soft px-3 text-ui font-semibold text-primary-deep transition-colors hover:bg-primary-soft-hover'
 const dangerButton = 'inline-flex min-h-control cursor-pointer items-center justify-center rounded-control border border-clay bg-clay px-3 text-ui font-semibold text-on-deep transition-colors hover:border-danger-deep hover:bg-danger-deep'
 const fieldClass = 'min-h-control w-full rounded-control border border-line bg-on-deep px-3 text-ink'
 
@@ -198,14 +197,14 @@ export function TextFormatterApp({
                   <div className="flex flex-wrap gap-2">
                     <button
                       aria-expanded={resultOpen}
-                      className={`${quietButton} disabled:cursor-not-allowed disabled:opacity-55`}
+                      className={FormatterButtons.quiet()}
                       disabled={!EditorField.canOpen(preview.output)}
                       onClick={() => setResultOpen(true)}
                       type="button"
                     >
                       展开
                     </button>
-                    <button className={primaryButton} disabled={inputEmpty} onClick={() => void copyOutput()} type="button">复制结果</button>
+                    <button className={FormatterButtons.primary()} disabled={inputEmpty} onClick={() => void copyOutput()} type="button">复制结果</button>
                   </div>
                 </div>
                 {preview.error && <p className="m-0 mt-3 rounded-control border border-warn-line bg-warn-bg px-3 py-2 text-ui text-warn" role="alert">{preview.error}</p>}
@@ -263,7 +262,7 @@ export function TextFormatterApp({
             <h2 className="m-0 text-title text-ink" id="delete-dialog-title">删除方案？</h2>
             <p className="m-0 mt-2.5 mb-panel text-value text-muted">「{pendingDelete.name}」会从这台浏览器中移除。</p>
             <div className="flex justify-end gap-2">
-              <button className={quietButton} onClick={() => setPendingDelete(null)} type="button">取消</button>
+              <button className={FormatterButtons.quiet()} onClick={() => setPendingDelete(null)} type="button">取消</button>
               <button className={dangerButton} onClick={() => deleteScheme(pendingDelete)} type="button">确认删除</button>
             </div>
           </section>

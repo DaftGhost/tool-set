@@ -8,6 +8,7 @@ import {
   type SqlCasing,
   type TextKind,
 } from '../domain/formatModel'
+import { FormatterButtons } from './formatterButtons'
 
 interface SchemeDialogProps {
   mode: 'create' | 'edit'
@@ -17,8 +18,6 @@ interface SchemeDialogProps {
   onSubmit: (scheme: FormatScheme) => void
 }
 
-const quietButton = 'inline-flex min-h-control cursor-pointer items-center justify-center rounded-control border border-line bg-primary-soft px-3 text-ui font-semibold text-primary-deep transition-colors hover:bg-primary-soft-hover'
-const primaryButton = 'inline-flex min-h-control cursor-pointer items-center justify-center rounded-control border border-primary bg-primary px-4 text-label font-bold text-on-deep transition-colors hover:border-primary-deep hover:bg-primary-deep'
 const fieldClass = 'min-h-control w-full rounded-control border border-line bg-on-deep px-3 text-ink'
 
 export function SchemeDialog({ mode, scheme, lockKind, onClose, onSubmit }: SchemeDialogProps) {
@@ -169,8 +168,8 @@ export function SchemeDialog({ mode, scheme, lockKind, onClose, onSubmit }: Sche
         )}
 
         <div className="mt-panel flex justify-end gap-2">
-          <button className={quietButton} onClick={onClose} type="button">取消</button>
-          <button className={primaryButton} type="submit">保存方案</button>
+          <button className={FormatterButtons.quiet()} onClick={onClose} type="button">取消</button>
+          <button className={FormatterButtons.primary()} type="submit">保存方案</button>
         </div>
       </form>
     </div>
