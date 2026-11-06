@@ -2,8 +2,9 @@ import { describe, expect, it } from 'vitest'
 import { buildChartModel } from '../domain/chart'
 import { RequestPricing, calculateCost, parseScenarioDraft } from '../domain/cost'
 import type { CalculationInput, ModelPriceSource, ScenarioDraft } from '../domain/cost'
+import { ModelPrice } from '../domain/modelPrice'
 import { CacheTtlPricing, ContextPricing } from '../domain/pricing'
-import { normalizeScenarioDraft, validateScenarioList } from '../domain/scenarios'
+import { cloneScenario, normalizeScenarioDraft, validateScenarioList } from '../domain/scenarios'
 import { CatalogCost } from '../services/modelCatalog'
 import { loadModelCatalog } from '../storage/modelCatalogStorage'
 import { loadScenarioState } from '../storage/scenarioStorage'
@@ -23,7 +24,6 @@ function draft(overrides: Partial<ScenarioDraft> = {}): ScenarioDraft {
     outputPrice: '3',
     contextTier: 'auto',
     cacheTtlId: 'catalog',
-    customTtls: [],
     ...overrides,
   })
 }
@@ -230,6 +230,7 @@ describe('single-request cache pricing', () => {
     expect(scenario.cacheTtlId).toBe('')
     expect(scenario.modelPriceSource?.cacheWriteUsdPerMillion).toBe(0)
     expect(scenario.modelPriceSource?.contextTiers).toEqual([])
+    expect(scenario).not.toHaveProperty('customTtls')
     const result = parseScenarioDraft(scenario)
     expect(result.ok).toBe(true)
     if (!result.ok) return
@@ -268,7 +269,6 @@ describe('single-request cache pricing', () => {
       outputPrice: '108',
       contextTier: '272000',
       cacheTtlId: '',
-      customTtls: [],
       modelPriceSource: source,
     }
     const pinnedBase = {
@@ -385,5 +385,136 @@ describe('models.dev context tiers', () => {
     )
 
     expect(loadModelCatalog()).toBeNull()
+  })
+})
+
+function storedSource(overrides: Record<string, unknown> = {}) {
+  return {
+    providerId: 'openai',
+    providerName: 'OpenAI',
+    modelId: 'gpt-4o',
+    modelName: 'GPT-4o',
+    inputUsdPerMillion: 2.5,
+    cacheReadUsdPerMillion: 1.25,
+    cacheWriteUsdPerMillion: 3,
+    outputUsdPerMillion: 10,
+    contextTiers: [] as unknown[],
+    lastUpdated: null as string | null,
+    ...overrides,
+  }
+}
+
+function scenarioShell(source: unknown) {
+  return {
+    id: 'stored',
+    name: '归档',
+    inputTokensM: '1',
+    cacheHitPercent: '0',
+    outputRatioPercent: '0',
+    cachedPrice: '0',
+    uncachedPrice: '1',
+    outputPrice: '1',
+    modelPriceSource: source,
+  }
+}
+
+function storeCatalogSource(source: unknown) {
+  window.localStorage.setItem(STORAGE_KEYS.catalog, JSON.stringify({
+    version: 2,
+    models: [{ source, isFirstParty: true }],
+  }))
+}
+
+function tierAt(aboveTokens: number) {
+  return {
+    aboveTokens,
+    inputUsdPerMillion: 1,
+    cacheReadUsdPerMillion: 0.1,
+    cacheWriteUsdPerMillion: 1,
+    outputUsdPerMillion: 2,
+  }
+}
+
+describe('stored model price source', () => {
+  it('fills a missing write price and context tiers for scenario archives and the catalog cache', () => {
+    const legacy = {
+      providerId: 'openai',
+      providerName: 'OpenAI',
+      modelId: 'gpt-4o',
+      modelName: 'GPT-4o',
+      inputUsdPerMillion: 2.5,
+      cacheReadUsdPerMillion: 1.25,
+      outputUsdPerMillion: 10,
+      lastUpdated: '2025-05-01',
+    }
+
+    expect(ModelPrice.isSource(legacy)).toBe(true)
+    if (!ModelPrice.isSource(legacy)) return
+    expect(validateScenarioList([scenarioShell(legacy)])).toBe(true)
+    expect(ModelPrice.normalize(legacy)).toMatchObject({
+      cacheWriteUsdPerMillion: 0,
+      contextTiers: [],
+    })
+
+    storeCatalogSource(legacy)
+    const loaded = loadModelCatalog()
+    expect(loaded?.[0].source.cacheWriteUsdPerMillion).toBe(0)
+    expect(loaded?.[0].source.contextTiers).toEqual([])
+  })
+
+  it('rejects the same invalid price source from scenario archives and the catalog cache', () => {
+    const tooManyTiers = storedSource({
+      contextTiers: Array.from({ length: 33 }, (_, index) => tierAt(index + 1)),
+    })
+    const fullTierList = storedSource({
+      contextTiers: Array.from({ length: 32 }, (_, index) => tierAt(index + 1)),
+    })
+    const tooHigh = storedSource({ contextTiers: [tierAt(100_000_001)] })
+    const atTokenCap = storedSource({ contextTiers: [tierAt(100_000_000)] })
+    const negativeWrite = storedSource({ cacheWriteUsdPerMillion: -1 })
+    const tierMissingWrite = storedSource({
+      contextTiers: [{
+        aboveTokens: 1_000,
+        inputUsdPerMillion: 1,
+        cacheReadUsdPerMillion: 0.1,
+        outputUsdPerMillion: 2,
+      }],
+    })
+
+    for (const source of [tooManyTiers, tooHigh, negativeWrite, tierMissingWrite]) {
+      expect(ModelPrice.isSource(source)).toBe(false)
+      expect(validateScenarioList([scenarioShell(source)])).toBe(false)
+      storeCatalogSource(source)
+      expect(loadModelCatalog()).toBeNull()
+    }
+
+    expect(ModelPrice.isSource(fullTierList)).toBe(true)
+    expect(ModelPrice.isSource(atTokenCap)).toBe(true)
+    expect(validateScenarioList([scenarioShell(atTokenCap)])).toBe(true)
+    storeCatalogSource(atTokenCap)
+    expect(loadModelCatalog()?.[0].source.contextTiers[0].aboveTokens).toBe(100_000_000)
+  })
+
+  it('drops archived customTtls when a scenario is loaded or cloned', () => {
+    const archived = {
+      ...scenarioShell(undefined),
+      customTtls: [{ id: '', label: 'not a duration', writePrice: 12 }],
+    }
+    delete archived.modelPriceSource
+
+    expect(validateScenarioList([archived])).toBe(true)
+    window.localStorage.setItem(STORAGE_KEYS.scenarios, JSON.stringify({
+      version: 1,
+      scenarios: [archived],
+      activeId: 'stored',
+    }))
+
+    const loaded = loadScenarioState()
+    expect(loaded.status).toBe('loaded')
+    if (loaded.status !== 'loaded') return
+    expect(loaded.state.scenarios[0]).not.toHaveProperty('customTtls')
+
+    const dirty = { ...loaded.state.scenarios[0], customTtls: [{ id: 'h', label: '1h', writePrice: '4' }] }
+    expect(cloneScenario(dirty, loaded.state.scenarios)).not.toHaveProperty('customTtls')
   })
 })

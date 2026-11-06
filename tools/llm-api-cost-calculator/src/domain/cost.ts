@@ -27,12 +27,6 @@ export type ModelPriceSource = Readonly<{
   lastUpdated: string | null
 }>
 
-export type CustomTtlRow = Readonly<{
-  id: string
-  label: string
-  writePrice: string
-}>
-
 export type ScenarioDraft = {
   id: string
   name: string
@@ -46,7 +40,6 @@ export type ScenarioDraft = {
   outputPrice: string
   contextTier: string
   cacheTtlId: string
-  customTtls: CustomTtlRow[]
   modelPriceSource?: ModelPriceSource
 }
 
