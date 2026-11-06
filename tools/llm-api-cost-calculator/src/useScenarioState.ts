@@ -1,7 +1,7 @@
 import { useEffect, useReducer, useState } from 'react'
-import type { DraftField, ModelPriceSource, ScenarioDraft } from './domain/cost'
+import { ModelPriceSource, type DraftField, type ScenarioDraft } from './domain/cost'
 import { ContextPricing, CacheTtlPricing } from './domain/pricing'
-import { exampleScenarios, normalizeModelPriceSource } from './domain/scenarios'
+import { exampleScenarios } from './domain/scenarios'
 import { loadScenarioState, saveScenarioState } from './storage/scenarioStorage'
 import type { LoadResult } from './storage/scenarioStorage'
 
@@ -73,7 +73,7 @@ export function scenarioReducer(state: ScenarioState, action: ScenarioAction): S
       return changed({ scenarios: replaceAt(state.scenarios, index, { ...active, name }) })
     }
     case 'link': {
-      const source = normalizeModelPriceSource(action.source)
+      const source = ModelPriceSource.normalize(action.source)
       const bracket = ContextPricing.bracket(source, ContextPricing.promptTokens(active.inputTokensM))
       const durations = CacheTtlPricing.choices(bracket.cacheTtls)
       const linked: ScenarioDraft = {

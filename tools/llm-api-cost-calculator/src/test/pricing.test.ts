@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { buildChartModel } from '../domain/chart'
-import { RequestPricing, calculateCost, parseScenarioDraft } from '../domain/cost'
-import type { CalculationInput, ModelPriceSource, ScenarioDraft } from '../domain/cost'
+import { ModelPriceSource, RequestPricing, calculateCost, parseScenarioDraft } from '../domain/cost'
+import type { CalculationInput, ScenarioDraft } from '../domain/cost'
 import { CacheTtlPricing, ContextPricing } from '../domain/pricing'
 import { normalizeScenarioDraft, validateScenarioList } from '../domain/scenarios'
 import { CatalogCost } from '../services/modelCatalog'
@@ -23,7 +23,6 @@ function draft(overrides: Partial<ScenarioDraft> = {}): ScenarioDraft {
     outputPrice: '3',
     contextTier: 'auto',
     cacheTtlId: 'catalog',
-    customTtls: [],
     ...overrides,
   })
 }
@@ -268,7 +267,6 @@ describe('single-request cache pricing', () => {
       outputPrice: '108',
       contextTier: '272000',
       cacheTtlId: '',
-      customTtls: [],
       modelPriceSource: source,
     }
     const pinnedBase = {
@@ -316,6 +314,136 @@ describe('single-request cache pricing', () => {
     expect(withoutRate.state.scenarios[0].contextTier).toBe('auto')
     expect(withoutRate.state.scenarios[0].uncachedPrice).toBe('28.8')
     expect(withoutRate.state.scenarios[1].uncachedPrice).toBe('14.4')
+  })
+
+  it('drops saved custom TTL rows and keeps the catalog duration on the price source', () => {
+    const durations = [
+      { id: '5m', writeUsdPerMillion: 2.5 },
+      { id: '1h', writeUsdPerMillion: 4 },
+    ]
+    const saved = {
+      id: 'legacy-ttl',
+      name: '旧时长',
+      inputTokensM: '1',
+      cacheHitPercent: '0',
+      cacheWritePercent: '0',
+      outputRatioPercent: '0',
+      cachedPrice: '0.72',
+      cacheWritePrice: '18',
+      uncachedPrice: '14.4',
+      outputPrice: '72',
+      contextTier: 'auto',
+      cacheTtlId: '1h',
+      customTtls: [{ id: 'row-1', label: '30m', writePrice: '9' }],
+      modelPriceSource: source({ cacheTtls: durations }),
+    }
+    window.localStorage.setItem(STORAGE_KEYS.scenarios, JSON.stringify({ version: 1, scenarios: [saved], activeId: 'legacy-ttl' }))
+
+    expect(validateScenarioList([saved])).toBe(true)
+    expect(validateScenarioList([{ ...saved, customTtls: 'leftover' }])).toBe(true)
+    const loaded = loadScenarioState()
+    expect(loaded.status).toBe('loaded')
+    if (loaded.status !== 'loaded') return
+    const scenario = loaded.state.scenarios[0]
+    expect(scenario).not.toHaveProperty('customTtls')
+    expect(scenario.cacheTtlId).toBe('1h')
+    expect(scenario.modelPriceSource?.cacheTtls).toEqual(durations)
+    const bracket = ContextPricing.bracket(scenario.modelPriceSource!, 1)
+    expect(CacheTtlPricing.writeUsd(bracket, scenario.cacheTtlId)).toBe(4)
+    expect(CacheTtlPricing.choices(bracket.cacheTtls).map((choice) => choice.id)).toEqual(['5m', '1h'])
+  })
+})
+
+describe('ModelPriceSource.validate', () => {
+  it('accepts a complete source and a version 1 source that omits write price and tiers', () => {
+    const durations = [
+      { id: '5m', writeUsdPerMillion: 2.5 },
+      { id: '1h', writeUsdPerMillion: 4 },
+    ]
+    const tierTtls = [{ id: '5m', writeUsdPerMillion: 6 }]
+    const priced = source({
+      cacheTtls: durations,
+      contextTiers: [{
+        aboveTokens: 272_000,
+        inputUsdPerMillion: 4,
+        cacheReadUsdPerMillion: 0.2,
+        cacheWriteUsdPerMillion: 5,
+        cacheTtls: tierTtls,
+        outputUsdPerMillion: 15,
+      }],
+    })
+    const legacy = {
+      providerId: 'openai',
+      providerName: 'OpenAI',
+      modelId: 'gpt-4o',
+      modelName: 'GPT-4o',
+      inputUsdPerMillion: 2.5,
+      cacheReadUsdPerMillion: 1.25,
+      outputUsdPerMillion: 10,
+      lastUpdated: '2025-05-01',
+    }
+
+    expect(ModelPriceSource.validate(priced)).toBe(true)
+    expect(ModelPriceSource.validate(legacy)).toBe(true)
+    if (!ModelPriceSource.validate(priced) || !ModelPriceSource.validate(legacy)) return
+
+    const normalized = ModelPriceSource.normalize(priced)
+    expect(normalized.cacheTtls).toEqual(durations)
+    expect(normalized.cacheTtls).not.toBe(priced.cacheTtls)
+    expect(normalized.contextTiers[0].cacheTtls).toEqual(tierTtls)
+    expect(normalized.contextTiers[0].cacheTtls).not.toBe(tierTtls)
+    expect(ModelPriceSource.normalize(legacy)).toMatchObject({
+      cacheWriteUsdPerMillion: 0,
+      contextTiers: [],
+      inputUsdPerMillion: 2.5,
+    })
+    expect(ModelPriceSource.normalize(legacy).cacheTtls).toBeUndefined()
+  })
+
+  it('rejects an empty identifier, a non-finite price, a zero tier, and a blank duration', () => {
+    const priced = source()
+    const tier = priced.contextTiers[0]
+
+    expect(ModelPriceSource.validate(null)).toBe(false)
+    expect(ModelPriceSource.validate({ ...priced, providerId: '   ' })).toBe(false)
+    expect(ModelPriceSource.validate({ ...priced, modelName: 'x'.repeat(161) })).toBe(false)
+    expect(ModelPriceSource.validate({ ...priced, inputUsdPerMillion: -1 })).toBe(false)
+    expect(ModelPriceSource.validate({ ...priced, cacheReadUsdPerMillion: Number.NaN })).toBe(false)
+    expect(ModelPriceSource.validate({ ...priced, cacheWriteUsdPerMillion: -0.1 })).toBe(false)
+    expect(ModelPriceSource.validate({ ...priced, outputUsdPerMillion: Number.POSITIVE_INFINITY })).toBe(false)
+    expect(ModelPriceSource.validate({ ...priced, contextTiers: [{ ...tier, aboveTokens: 0 }] })).toBe(false)
+    expect(ModelPriceSource.validate({ ...priced, contextTiers: [{ ...tier, aboveTokens: 1.5 }] })).toBe(false)
+    expect(ModelPriceSource.validate({ ...priced, cacheTtls: [{ id: '', writeUsdPerMillion: 1 }] })).toBe(false)
+    expect(ModelPriceSource.validate({ ...priced, cacheTtls: [{ id: '5m', writeUsdPerMillion: -1 }] })).toBe(false)
+    expect(ModelPriceSource.validate({ ...priced, lastUpdated: 'x'.repeat(33) })).toBe(false)
+    expect(ModelPriceSource.validate({ ...priced, lastUpdated: 2026 })).toBe(false)
+  })
+
+  it('rejects more than 32 context tiers or more than 8 durations', () => {
+    const tier = source().contextTiers[0]
+    const tiers = Array.from({ length: 33 }, (_, index) => ({ ...tier, aboveTokens: index + 1 }))
+    const durations = Array.from({ length: 9 }, (_, index) => ({ id: `${index + 1}m`, writeUsdPerMillion: index }))
+
+    expect(ModelPriceSource.validate(source({ contextTiers: tiers }))).toBe(false)
+    expect(ModelPriceSource.validate(source({ contextTiers: tiers.slice(0, 32) }))).toBe(true)
+    expect(ModelPriceSource.validate(source({ cacheTtls: durations }))).toBe(false)
+    expect(ModelPriceSource.validate(source({ cacheTtls: durations.slice(0, 8) }))).toBe(true)
+  })
+
+  it('rejects a scenario whose linked price source fails validation', () => {
+    const saved = {
+      id: 'bad-source',
+      name: '坏价格',
+      inputTokensM: '1',
+      cacheHitPercent: '0',
+      outputRatioPercent: '0',
+      cachedPrice: '1',
+      uncachedPrice: '2',
+      outputPrice: '3',
+      modelPriceSource: { ...source(), cacheReadUsdPerMillion: -1 },
+    }
+
+    expect(validateScenarioList([saved])).toBe(false)
   })
 })
 

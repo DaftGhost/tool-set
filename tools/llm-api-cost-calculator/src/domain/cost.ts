@@ -13,25 +13,114 @@ export type ContextTierPrice = Readonly<{
   outputUsdPerMillion: number
 }>
 
-export type ModelPriceSource = Readonly<{
-  providerId: string
-  providerName: string
-  modelId: string
-  modelName: string
-  inputUsdPerMillion: number
-  cacheReadUsdPerMillion: number
-  cacheWriteUsdPerMillion: number
-  cacheTtls?: readonly CacheDurationPrice[]
-  outputUsdPerMillion: number
-  contextTiers: readonly ContextTierPrice[]
-  lastUpdated: string | null
-}>
+/** Accepts a models.dev price source at the boundary and fills fields older saves omitted. */
+export class ModelPriceSource {
+  // Price sources stay plain records. This class only holds the boundary checks.
+  private constructor() {}
 
-export type CustomTtlRow = Readonly<{
-  id: string
-  label: string
-  writePrice: string
-}>
+  static validate(value: unknown): value is ModelPriceSource {
+    if (typeof value !== 'object' || value === null) return false
+    const record = value as Record<string, unknown>
+    const identifiers = ['providerId', 'providerName', 'modelId', 'modelName']
+    const hasValidIdentifiers = identifiers.every((field) =>
+      typeof record[field] === 'string'
+      && record[field].trim().length > 0
+      && record[field].length <= 160,
+    )
+    const prices = [record.inputUsdPerMillion, record.cacheReadUsdPerMillion, record.outputUsdPerMillion]
+    const hasValidPrices = prices.every((price) =>
+      typeof price === 'number'
+      && Number.isFinite(price)
+      && price >= 0,
+    )
+    const hasValidWrite = record.cacheWriteUsdPerMillion === undefined
+      || (typeof record.cacheWriteUsdPerMillion === 'number'
+        && Number.isFinite(record.cacheWriteUsdPerMillion)
+        && record.cacheWriteUsdPerMillion >= 0)
+    const hasValidTiers = record.contextTiers === undefined
+      || (Array.isArray(record.contextTiers)
+        && record.contextTiers.length <= 32
+        && record.contextTiers.every((tier) => ModelPriceSource.isContextTier(tier)))
+    const hasValidTtls = ModelPriceSource.isDurationList(record.cacheTtls)
+    const hasValidLastUpdated = record.lastUpdated === null
+      || (typeof record.lastUpdated === 'string' && record.lastUpdated.length <= 32)
+
+    return hasValidIdentifiers && hasValidPrices && hasValidWrite && hasValidTiers && hasValidTtls && hasValidLastUpdated
+  }
+
+  static normalize(source: ModelPriceSource): ModelPriceSource {
+    const record = source as ModelPriceSource & { cacheWriteUsdPerMillion?: number; contextTiers?: readonly ContextTierPrice[] }
+    const cacheTtls = ModelPriceSource.copyDurations(record.cacheTtls)
+    return {
+      providerId: source.providerId,
+      providerName: source.providerName,
+      modelId: source.modelId,
+      modelName: source.modelName,
+      inputUsdPerMillion: source.inputUsdPerMillion,
+      cacheReadUsdPerMillion: source.cacheReadUsdPerMillion,
+      cacheWriteUsdPerMillion: typeof record.cacheWriteUsdPerMillion === 'number' ? record.cacheWriteUsdPerMillion : 0,
+      ...(cacheTtls ? { cacheTtls } : {}),
+      outputUsdPerMillion: source.outputUsdPerMillion,
+      contextTiers: Array.isArray(record.contextTiers)
+        ? record.contextTiers.map((tier) => {
+            const tierTtls = ModelPriceSource.copyDurations(tier.cacheTtls)
+            return tierTtls ? { ...tier, cacheTtls: tierTtls } : { ...tier }
+          })
+        : [],
+      lastUpdated: source.lastUpdated,
+    }
+  }
+
+  private static isDuration(value: unknown): boolean {
+    if (typeof value !== 'object' || value === null) return false
+    const record = value as Record<string, unknown>
+    return typeof record.id === 'string'
+      && record.id.length > 0
+      && record.id.length <= 16
+      && typeof record.writeUsdPerMillion === 'number'
+      && Number.isFinite(record.writeUsdPerMillion)
+      && record.writeUsdPerMillion >= 0
+  }
+
+  private static isDurationList(value: unknown): boolean {
+    return value === undefined
+      || (Array.isArray(value) && value.length <= 8 && value.every((item) => ModelPriceSource.isDuration(item)))
+  }
+
+  private static isContextTier(value: unknown): value is ContextTierPrice {
+    if (typeof value !== 'object' || value === null) return false
+    const record = value as Record<string, unknown>
+    const prices = [record.inputUsdPerMillion, record.cacheReadUsdPerMillion, record.cacheWriteUsdPerMillion, record.outputUsdPerMillion]
+    return typeof record.aboveTokens === 'number'
+      && Number.isInteger(record.aboveTokens)
+      && record.aboveTokens > 0
+      && record.aboveTokens <= 100_000_000
+      && prices.every((price) => typeof price === 'number' && Number.isFinite(price) && price >= 0)
+      && ModelPriceSource.isDurationList(record.cacheTtls)
+  }
+
+  private static copyDurations(value: unknown): CacheDurationPrice[] | undefined {
+    if (!Array.isArray(value)) return undefined
+    return value.map((item) => {
+      const record = item as CacheDurationPrice
+      return { id: record.id, writeUsdPerMillion: record.writeUsdPerMillion }
+    })
+  }
+}
+
+export interface ModelPriceSource {
+  readonly providerId: string
+  readonly providerName: string
+  readonly modelId: string
+  readonly modelName: string
+  readonly inputUsdPerMillion: number
+  readonly cacheReadUsdPerMillion: number
+  readonly cacheWriteUsdPerMillion: number
+  readonly cacheTtls?: readonly CacheDurationPrice[]
+  readonly outputUsdPerMillion: number
+  readonly contextTiers: readonly ContextTierPrice[]
+  readonly lastUpdated: string | null
+}
 
 export type ScenarioDraft = {
   id: string
@@ -46,7 +135,6 @@ export type ScenarioDraft = {
   outputPrice: string
   contextTier: string
   cacheTtlId: string
-  customTtls: CustomTtlRow[]
   modelPriceSource?: ModelPriceSource
 }
 
