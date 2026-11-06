@@ -2,6 +2,7 @@ import { spawn } from 'node:child_process'
 import { cp, mkdir, readFile, readdir, rm, stat, writeFile } from 'node:fs/promises'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
+import { ToolMetadata } from './devToolMetadata.mjs'
 
 const repositoryRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
 
@@ -26,64 +27,38 @@ async function runToolCommand(command, toolDir, slug, field) {
   }
 }
 
-function invalidMetadata(metadataPath, field, detail) {
-  return new Error(`Invalid tool metadata at ${metadataPath}: ${field} ${detail}`)
-}
-
 function validateMetadata(metadata, slug, metadataPath, toolDir) {
-  if (!/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(slug)) {
-    throw invalidMetadata(metadataPath, 'directory name', 'must contain lowercase letters, numbers, and single hyphens')
-  }
-  if (!metadata || typeof metadata !== 'object' || Array.isArray(metadata)) {
-    throw invalidMetadata(metadataPath, 'root', 'must be a JSON object')
-  }
-  if (metadata.schemaVersion !== 1) {
-    throw invalidMetadata(metadataPath, 'schemaVersion', 'must be 1')
-  }
-  if (metadata.kind !== 'browser') {
-    throw invalidMetadata(metadataPath, 'kind', 'must be "browser"')
-  }
-  for (const field of ['category', 'actionLabel', 'name', 'summary']) {
-    if (typeof metadata[field] !== 'string' || metadata[field].trim() === '') {
-      throw invalidMetadata(metadataPath, field, 'must be a non-empty string')
-    }
-  }
+  ToolMetadata.validatePublicFields(metadata, slug, metadataPath)
 
   const build = metadata.build
   if (!build || typeof build !== 'object' || Array.isArray(build)) {
-    throw invalidMetadata(metadataPath, 'build', 'must be an object')
+    throw ToolMetadata.invalidMetadata(metadataPath, 'build', 'must be an object')
   }
   if (build.install !== undefined && (
     !Array.isArray(build.install)
     || build.install.some((part) => typeof part !== 'string')
     || (build.install.length > 0 && build.install[0].trim() === '')
   )) {
-    throw invalidMetadata(metadataPath, 'build.install', 'must be an array of command arguments')
+    throw ToolMetadata.invalidMetadata(metadataPath, 'build.install', 'must be an array of command arguments')
   }
   if (!Array.isArray(build.command) || build.command.length === 0 || build.command.some((part) => typeof part !== 'string') || build.command[0].trim() === '') {
-    throw invalidMetadata(metadataPath, 'build.command', 'must be a non-empty array of command arguments')
+    throw ToolMetadata.invalidMetadata(metadataPath, 'build.command', 'must be a non-empty array of command arguments')
   }
   if (typeof build.outputDirectory !== 'string' || build.outputDirectory.trim() === '') {
-    throw invalidMetadata(metadataPath, 'build.outputDirectory', 'must be a non-empty relative path')
+    throw ToolMetadata.invalidMetadata(metadataPath, 'build.outputDirectory', 'must be a non-empty relative path')
   }
   if (path.isAbsolute(build.outputDirectory) || path.win32.isAbsolute(build.outputDirectory)) {
-    throw invalidMetadata(metadataPath, 'build.outputDirectory', 'must be a relative path')
+    throw ToolMetadata.invalidMetadata(metadataPath, 'build.outputDirectory', 'must be a relative path')
   }
 
   const resolvedOutputDirectory = path.resolve(toolDir, build.outputDirectory)
-  const outputPathFromTool = path.relative(toolDir, resolvedOutputDirectory)
-  if (outputPathFromTool === '..' || outputPathFromTool.startsWith(`..${path.sep}`) || path.isAbsolute(outputPathFromTool)) {
-    throw invalidMetadata(metadataPath, 'build.outputDirectory', 'must not escape the tool directory')
+  if (!ToolMetadata.isWithin(toolDir, resolvedOutputDirectory)) {
+    throw ToolMetadata.invalidMetadata(metadataPath, 'build.outputDirectory', 'must not escape the tool directory')
   }
 }
 
-function isWithin(parent, child) {
-  const relative = path.relative(parent, child)
-  return relative === '' || (relative !== '..' && !relative.startsWith(`..${path.sep}`) && !path.isAbsolute(relative))
-}
-
 function pathsOverlap(first, second) {
-  return isWithin(first, second) || isWithin(second, first)
+  return ToolMetadata.isWithin(first, second) || ToolMetadata.isWithin(second, first)
 }
 
 async function validatePublishedToolOutputs(outputDir, expectedSlugs) {
