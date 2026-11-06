@@ -4,6 +4,36 @@ import { test } from 'node:test'
 
 const repositoryRoot = new URL('../', import.meta.url)
 
+class PreviewWorkflow {
+  static between(source, startMarker, endMarker) {
+    const start = source.indexOf(startMarker)
+    if (start < 0) throw new Error(`Missing preview workflow marker: ${JSON.stringify(startMarker)}`)
+    const from = start + startMarker.length
+    const end = source.indexOf(endMarker, from)
+    if (end < 0) throw new Error(`Missing preview workflow marker: ${JSON.stringify(endMarker)}`)
+    return source.slice(start, end)
+  }
+
+  static previewJob(workflow) {
+    return PreviewWorkflow.between(workflow, '  preview:\n', '\n  cleanup:\n')
+  }
+
+  static step(workflow, stepName) {
+    return PreviewWorkflow.between(workflow, `      - name: ${stepName}\n`, '\n      - name:')
+  }
+
+  static runScript(step) {
+    const marker = 'run: |\n'
+    const start = step.indexOf(marker)
+    if (start < 0) throw new Error('Missing preview workflow run script')
+    return step.slice(start + marker.length)
+  }
+
+  static envFlags(script) {
+    return script.match(/--env(?:=|\s+)\S+/g) ?? []
+  }
+}
+
 test('Workers configuration targets the assembled site and preserves directory indexes and 404s', async () => {
   const config = JSON.parse(await readFile(new URL('wrangler.json', repositoryRoot), 'utf8'))
 
@@ -71,4 +101,43 @@ test('local site previews use the same D1 identity and version as the tool devel
   assert.equal(config.env.local.d1_databases[0].database_id, standalone.d1_databases[0].database_id)
   assert.deepEqual(config.env.local.vars, standalone.vars)
   assert.match(manifest.scripts['preview:workers'], /wrangler dev --env local --local/)
+})
+
+test('pull request preview builds the site and uploads the top-level tool-set Worker version', async () => {
+  const workflow = await readFile(new URL('.github/workflows/pr-preview.yml', repositoryRoot), 'utf8')
+  const config = JSON.parse(await readFile(new URL('wrangler.json', repositoryRoot), 'utf8'))
+  const preview = PreviewWorkflow.previewJob(workflow)
+  const uploadStep = PreviewWorkflow.step(preview, 'Upload Worker version')
+  const upload = PreviewWorkflow.runScript(uploadStep)
+  const cleanupStep = PreviewWorkflow.step(workflow, 'Delete uploaded Worker versions')
+  const cleanup = PreviewWorkflow.runScript(cleanupStep)
+
+  assert.match(preview, / {6}- name: Build\n {8}run: pnpm run build\n[\s\S]*pnpm exec wrangler versions upload/)
+  assert.equal(config.name, 'tool-set')
+  assert.match(cleanupStep, /WORKER_NAME:\s*tool-set\s*(?:\n|$)/)
+  assert.match(upload, /pnpm exec wrangler versions upload \\/)
+  assert.deepEqual(PreviewWorkflow.envFlags(upload), ['--env=""'])
+  assert.doesNotMatch(uploadStep, /env\.local/)
+  assert.doesNotMatch(uploadStep, /CLOUDFLARE_ENV/)
+  assert.doesNotMatch(upload, /--name\b/)
+  assert.doesNotMatch(upload, /--config\b/)
+  assert.doesNotMatch(workflow, /wrangler deploy\b/)
+
+  assert.match(cleanup, /https:\/\/api\.cloudflare\.com\/client\/v4\/accounts\/\$\{CLOUDFLARE_ACCOUNT_ID\}/)
+  assert.match(cleanup, /"\$\{api\}\/workers\/scripts\/\$\{WORKER_NAME\}\/deployments"/)
+  assert.match(cleanup, /"\$\{api\}\/workers\/scripts\/\$\{WORKER_NAME\}\/versions\?page=\$\{page\}&per_page=50"/)
+  assert.match(cleanup, /-X DELETE[\s\S]*"\$\{api\}\/workers\/workers\/\$\{WORKER_NAME\}\/versions\/\$\{id\}"/)
+  assert.doesNotMatch(cleanup, /workers\/scripts\/\$\{WORKER_NAME\}\/versions\/\$\{id\}/)
+})
+
+test('persona dataset version matches the data contract in every Wrangler var', async () => {
+  const { datasetVersion } = await import('../tools/random-persona-generator/src/dataContract.ts')
+  const config = JSON.parse(await readFile(new URL('wrangler.json', repositoryRoot), 'utf8'))
+  const standalone = JSON.parse(await readFile(new URL('tools/random-persona-generator/wrangler.local.json', repositoryRoot), 'utf8'))
+
+  assert.equal(typeof datasetVersion, 'string')
+  assert.ok(datasetVersion)
+  assert.equal(config.vars.PERSONA_DATASET_VERSION, datasetVersion)
+  assert.equal(config.env.local.vars.PERSONA_DATASET_VERSION, datasetVersion)
+  assert.equal(standalone.vars.PERSONA_DATASET_VERSION, datasetVersion)
 })
