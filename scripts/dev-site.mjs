@@ -4,7 +4,7 @@ import { readFileSync } from 'node:fs'
 import net from 'node:net'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { isWithin, readDevelopmentTools } from './devToolMetadata.mjs'
+import { ToolMetadata } from './devToolMetadata.mjs'
 
 const repositoryRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
 const rootPackage = JSON.parse(readFileSync(path.join(repositoryRoot, 'package.json'), 'utf8'))
@@ -93,7 +93,7 @@ if (tool) {
       server.watcher.on('all', (_event, changedPath) => {
         const absolutePath = path.resolve(changedPath)
         for (const tool of fallbackTools) {
-          if (!tool.watchPaths.some((watchPath) => isWithin(watchPath, absolutePath))) continue
+          if (!tool.watchPaths.some((watchPath) => ToolMetadata.isWithin(watchPath, absolutePath))) continue
           for (const response of clients.get(tool.slug)) response.write('event: reload\ndata: {}\n\n')
         }
       })
@@ -264,7 +264,7 @@ export async function startDevelopmentSite({
   readinessTimeoutMs = 15000,
   signal,
 } = {}) {
-  const tools = await readDevelopmentTools(path.resolve(toolsDir))
+  const tools = await ToolMetadata.readDevelopmentTools(path.resolve(toolsDir))
   const requestedPort = Number(port)
   if (!Number.isInteger(requestedPort) || requestedPort < 0 || requestedPort > 65535) {
     throw new Error(`Root development port must be an integer from 0 to 65535. Set TOOL_SET_DEV_PORT to a valid port. Received: ${port}`)

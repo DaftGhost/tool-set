@@ -3,6 +3,7 @@ import { realpath, stat } from 'node:fs/promises'
 import { createServer } from 'node:http'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
+import { ToolMetadata } from './devToolMetadata.mjs'
 
 const projectRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
 const siteRoot = path.join(projectRoot, 'site')
@@ -21,11 +22,6 @@ const contentTypes = new Map([
   ['.woff2', 'font/woff2'],
 ])
 
-function isWithin(parent, child) {
-  const relative = path.relative(parent, child)
-  return relative === '' || (relative !== '..' && !relative.startsWith(`..${path.sep}`) && !path.isAbsolute(relative))
-}
-
 function sendText(response, statusCode, message) {
   response.writeHead(statusCode, {
     'content-type': 'text/plain; charset=utf-8',
@@ -36,7 +32,7 @@ function sendText(response, statusCode, message) {
 
 async function resolveSiteFile(pathname, realSiteRoot) {
   let filePath = path.resolve(siteRoot, `.${pathname}`)
-  if (!isWithin(siteRoot, filePath)) return { status: 403 }
+  if (!ToolMetadata.isWithin(siteRoot, filePath)) return { status: 403 }
 
   let fileInfo = await stat(filePath)
   if (fileInfo.isDirectory()) {
@@ -46,7 +42,7 @@ async function resolveSiteFile(pathname, realSiteRoot) {
   if (!fileInfo.isFile()) return { status: 404 }
 
   const realFilePath = await realpath(filePath)
-  if (!isWithin(realSiteRoot, realFilePath)) return { status: 403 }
+  if (!ToolMetadata.isWithin(realSiteRoot, realFilePath)) return { status: 403 }
   return { filePath: realFilePath, fileInfo }
 }
 
