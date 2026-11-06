@@ -68,7 +68,7 @@
 
 ## 布局
 
-页面内容用 `page-frame`，最大宽度是 `max-w-page`（`container-page`）。顶栏左右留白用 `page-inset`。工具卡片里的说明最多 `max-w-summary`（`container-summary`）。资料页的本机记录栏用 `container-aside`。
+页面内容用 `page-frame`，最大宽度是 `max-w-page`（`container-page`）。堆叠断点上更窄的内容框最大宽度是 `max-w-stack`（`container-stack`），上边距是 `pt-block-stack`（`spacing-block-stack`）。顶栏左右留白用 `page-inset`。工具卡片里的说明最多 `max-w-summary`（`container-summary`）。资料页的本机记录栏用 `container-aside`。
 
 桌面规则不写断点前缀。`max-stack:`（`breakpoint-stack`）把主要区域改成单列。`max-phone:`（`breakpoint-phone`）把表单和卡片内边距再收成纵向。两个变体同时命中时，`max-phone:` 胜出。
 
@@ -87,6 +87,7 @@
 - `spacing-gutter`、`spacing-gutter-stack`、`spacing-gutter-phone`：页面左右留白
 - `spacing-section`：面板间距，例如 `gap-section`
 - `spacing-block`：内容区上边距，例如 `pt-block`
+- `spacing-block-stack`：堆叠断点上收窄的内容区上边距，例如 `pt-block-stack`
 - `spacing-footer`：内容区下边距，例如 `pb-footer`
 - `spacing-header`、`spacing-header-phone`：顶栏高度，例如 `min-h-header`
 - `spacing-control`：按钮和输入高度，例如 `min-h-control`

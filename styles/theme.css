@@ -136,6 +136,7 @@
   --spacing-gutter-phone: 14px;
   --spacing-section: 18px;
   --spacing-block: 44px;
+  --spacing-block-stack: 36px;
   --spacing-footer: 72px;
   --spacing-header: 72px;
   --spacing-header-phone: 64px;
@@ -145,6 +146,7 @@
   --breakpoint-stack: 861px;
 
   --container-page: 1240px;
+  --container-stack: 740px;
   --container-summary: 440px;
 
   --radius-panel: 14px;

@@ -1,5 +1,5 @@
 import { useEffect, useState, type ReactNode } from 'react'
-import { CatalogCards, CatalogSearch, loadCatalogData, type CatalogTool } from './catalog'
+import { CatalogCards, CatalogSearch, loadCatalogData, type CatalogGlyph, type CatalogTool } from './catalog'
 
 type CatalogState =
   | { status: 'loading' }
@@ -8,11 +8,11 @@ type CatalogState =
   | { status: 'error' }
 
 class ToolGlyph {
-  static mark(slug: string): ReactNode {
-    if (slug === 'llm-api-cost-calculator') return ToolGlyph.yen()
-    if (slug === 'text-formatter') return ToolGlyph.page()
-    if (slug === 'privacy-profile-generator') return ToolGlyph.shield()
-    if (slug === 'random-persona-generator') return ToolGlyph.person()
+  static mark(glyph: CatalogGlyph | 'square'): ReactNode {
+    if (glyph === 'yen') return ToolGlyph.yen()
+    if (glyph === 'page') return ToolGlyph.page()
+    if (glyph === 'shield') return ToolGlyph.shield()
+    if (glyph === 'person') return ToolGlyph.person()
     return ToolGlyph.square()
   }
 
@@ -63,7 +63,7 @@ function ToolCard({ tool }: { tool: CatalogTool }) {
     <a className="flex h-full flex-col rounded-panel border border-line bg-surface p-4 text-inherit no-underline transition-colors hover:border-primary" href={tool.href}>
       <span className="flex min-w-0 items-center gap-3">
         <span className="grid size-control shrink-0 place-items-center rounded-inset border border-primary-deep bg-primary-deep text-on-deep">
-          {ToolGlyph.mark(tool.slug)}
+          {ToolGlyph.mark(CatalogCards.glyphFor(tool))}
         </span>
         <span className="min-w-0">
           <h2 className="m-0 truncate text-heading text-ink">{tool.name}</h2>
