@@ -1,0 +1,229 @@
+name: PR preview
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, closed]
+
+concurrency:
+  group: tool-set-pr-preview-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  issues: write
+  pull-requests: write
+
+jobs:
+  preview:
+    if: github.event.action != 'closed'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v6
+        with:
+          version: 12.15.0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: 24.18.0
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build
+        run: pnpm run build
+
+      - name: Upload Worker version
+        id: upload
+        env:
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          PREVIEW_ALIAS: pr-${{ github.event.pull_request.number }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          set -euo pipefail
+          if [[ -z "${CLOUDFLARE_ACCOUNT_ID}" || -z "${CLOUDFLARE_API_TOKEN}" ]]; then
+            echo "Repository secrets CLOUDFLARE_ACCOUNT_ID and CLOUDFLARE_API_TOKEN are required." >&2
+            exit 1
+          fi
+          log="${RUNNER_TEMP}/wrangler-versions-upload.log"
+          pnpm exec wrangler versions upload \
+            --env="" \
+            --preview-alias "${PREVIEW_ALIAS}" \
+            --tag "${PREVIEW_ALIAS}" \
+            --message "PR #${PR_NUMBER} ${HEAD_SHA}" \
+            >"${log}" 2>&1 || { cat "${log}"; exit 1; }
+          sed -i -E 's/\x1B\[[0-9;]*[[:alpha:]]//g' "${log}"
+          cat "${log}"
+          version=$(grep -m 1 -E '^[[:space:]]*Worker Version ID:' "${log}" | tr -d '\r' | sed -E 's/^[[:space:]]*Worker Version ID:[[:space:]]*//' || true)
+          alias_url=$(grep -m 1 -E '^[[:space:]]*Version Preview Alias URL:' "${log}" | tr -d '\r' | sed -E 's/^[[:space:]]*Version Preview Alias URL:[[:space:]]*//; s/[[:space:]]+$//' || true)
+          version_url=$(grep -m 1 -E '^[[:space:]]*Version Preview URL:' "${log}" | tr -d '\r' | sed -E 's/^[[:space:]]*Version Preview URL:[[:space:]]*//; s/[[:space:]]+$//' || true)
+          alias_url=${alias_url%/}
+          version_url=${version_url%/}
+          if [[ ! "${version}" =~ ^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$ ]]; then
+            echo "wrangler did not report a Worker Version ID." >&2
+            exit 1
+          fi
+          if [[ ! "${alias_url}" =~ ^https://[A-Za-z0-9.-]+\.workers\.dev$ ]]; then
+            echo "wrangler did not report a Version Preview Alias URL. Version URLs must stay enabled for the tool-set Worker." >&2
+            exit 1
+          fi
+          {
+            echo "version=${version}"
+            echo "url=${alias_url}"
+            echo "version_url=${version_url}"
+          } >> "${GITHUB_OUTPUT}"
+
+      - name: Post or update the preview comment
+        uses: actions/github-script@v8
+        env:
+          PREVIEW_URL: ${{ steps.upload.outputs.url }}
+          VERSION_URL: ${{ steps.upload.outputs.version_url }}
+          VERSION_ID: ${{ steps.upload.outputs.version }}
+        with:
+          script: |
+            const marker = '<!-- tool-set-pr-preview -->'
+            const versionPattern = /<!-- tool-set-preview-versions:\s*([0-9a-f- ]*?)\s*-->/
+            const url = process.env.PREVIEW_URL
+            const versionUrl = process.env.VERSION_URL
+            const versionId = process.env.VERSION_ID
+            if (!url || !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/.test(versionId || '')) {
+              core.setFailed('Missing preview URL or version id')
+              return
+            }
+            const { owner, repo } = context.repo
+            const issue_number = context.payload.pull_request.number
+            const comments = await github.paginate(github.rest.issues.listComments, {
+              owner,
+              repo,
+              issue_number,
+              per_page: 100,
+            })
+            const existing = comments.find((comment) =>
+              (comment.body || '').includes(marker) && comment.user?.login === 'github-actions[bot]'
+            )
+            const previous = (existing?.body || '').match(versionPattern)?.[1]?.split(/\s+/).filter(Boolean) ?? []
+            const versions = [...new Set([...previous, versionId])]
+            const sha = context.payload.pull_request.head.sha
+            const lines = [
+              marker,
+              `<!-- tool-set-preview-versions: ${versions.join(' ')} -->`,
+              '',
+              'Preview URL:',
+              '',
+              url,
+              '',
+              'This public URL serves the latest Worker version uploaded for this pull request. It uses the `tool-set` Worker and the shared production `PERSONAS_DB` binding. A new commit updates this comment. Closing or merging the pull request deletes the uploaded version. Production traffic is unchanged.',
+            ]
+            if (versionUrl) lines.push('', `Version URL: ${versionUrl}`)
+            lines.push('', `Version: \`${versionId}\``, `Commit: \`${sha}\``)
+            const body = lines.join('\n')
+            if (existing) {
+              await github.rest.issues.updateComment({ owner, repo, comment_id: existing.id, body })
+            } else {
+              await github.rest.issues.createComment({ owner, repo, issue_number, body })
+            }
+
+  cleanup:
+    if: github.event.action == 'closed'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Delete uploaded Worker versions
+        env:
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          PREVIEW_ALIAS: pr-${{ github.event.pull_request.number }}
+          WORKER_NAME: tool-set
+        run: |
+          set -euo pipefail
+          if [[ -z "${CLOUDFLARE_ACCOUNT_ID}" || -z "${CLOUDFLARE_API_TOKEN}" ]]; then
+            echo "Repository secrets CLOUDFLARE_ACCOUNT_ID and CLOUDFLARE_API_TOKEN are required." >&2
+            exit 1
+          fi
+          api="https://api.cloudflare.com/client/v4/accounts/${CLOUDFLARE_ACCOUNT_ID}"
+          auth=(-H "Authorization: Bearer ${CLOUDFLARE_API_TOKEN}")
+          deployments=$(curl -fsS "${auth[@]}" "${api}/workers/scripts/${WORKER_NAME}/deployments")
+          declare -A active_set=()
+          while IFS= read -r id; do
+            [[ -n "${id}" ]] && active_set["${id}"]=1
+          done < <(printf '%s' "${deployments}" | jq -r '
+            [(.result.deployments // [])[]]
+            | sort_by(.created_on)
+            | (last // {versions: []})
+            | .versions[]?
+            | .version_id // empty
+          ')
+
+          page=1
+          declare -A targets=()
+          while true; do
+            body=$(curl -fsS "${auth[@]}" "${api}/workers/scripts/${WORKER_NAME}/versions?page=${page}&per_page=50")
+            while IFS= read -r id; do
+              [[ -n "${id}" ]] && targets["${id}"]=1
+            done < <(printf '%s' "${body}" | jq -r --arg alias "${PREVIEW_ALIAS}" '
+              (.result.items // [])[]
+              | select((.annotations["workers/alias"] // "") == $alias or (.annotations["workers/tag"] // "") == $alias)
+              | .id
+            ')
+            per_page=$(printf '%s' "${body}" | jq -r '.result_info.per_page // 50')
+            total=$(printf '%s' "${body}" | jq -r '.result_info.total_count // 0')
+            if (( page * per_page >= total )); then
+              break
+            fi
+            page=$((page + 1))
+          done
+
+          if ((${#targets[@]} == 0)); then
+            echo "No preview versions to delete for ${PREVIEW_ALIAS}."
+            exit 0
+          fi
+          for id in "${!targets[@]}"; do
+            if [[ -n "${active_set[${id}]:-}" ]]; then
+              echo "Refusing to delete ${id}: it is serving the active deployment." >&2
+              exit 1
+            fi
+          done
+          for id in "${!targets[@]}"; do
+            response_file="${RUNNER_TEMP}/delete-${id}.json"
+            status=$(curl -sS -o "${response_file}" -w '%{http_code}' -X DELETE "${auth[@]}" \
+              "${api}/workers/workers/${WORKER_NAME}/versions/${id}")
+            if [[ "${status}" == "200" || "${status}" == "404" ]]; then
+              echo "Deleted ${id} (HTTP ${status})."
+              continue
+            fi
+            echo "Failed to delete ${id} (HTTP ${status})." >&2
+            cat "${response_file}" >&2
+            exit 1
+          done
+
+      - name: Mark the preview comment deleted
+        uses: actions/github-script@v8
+        with:
+          script: |
+            const marker = '<!-- tool-set-pr-preview -->'
+            const { owner, repo } = context.repo
+            const issue_number = context.payload.pull_request.number
+            const comments = await github.paginate(github.rest.issues.listComments, {
+              owner,
+              repo,
+              issue_number,
+              per_page: 100,
+            })
+            const existing = comments.find((comment) =>
+              (comment.body || '').includes(marker) && comment.user?.login === 'github-actions[bot]'
+            )
+            if (!existing) return
+            const body = [
+              marker,
+              '',
+              'The preview Worker version for this pull request has been deleted. The preview URL is no longer available. Production traffic was not changed.',
+            ].join('\n')
+            await github.rest.issues.updateComment({ owner, repo, comment_id: existing.id, body })

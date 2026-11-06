@@ -126,7 +126,13 @@ corepack pnpm run preview:workers --persist-to .wrangler/state
 | 部署命令（Deploy command） | `pnpm exec wrangler deploy` |
 | 构建环境变量 | `NODE_VERSION=24.18.0`、`PNPM_VERSION=12.15.0` |
 
-连接后，每次推送到 `main` 都会触发测试、全量构建和部署；测试或构建失败时不会更新线上站点。其他分支的预览构建（Preview builds）保持关闭。测试、构建和生产发布均由 Workers Builds 执行，仓库不保留 GitHub Actions 工作流，本地 Wrangler 命令仍可用于手动发布。
+连接后，每次推送到 `main` 都会触发测试、全量构建和部署；测试或构建失败时不会更新线上站点。其他分支的预览构建（Preview builds）保持关闭，生产环境不启用第二套 Cloudflare 预览。生产环境的测试、构建和发布仍由 Workers Builds 执行，本地 Wrangler 命令仍可用于手动发布。
+
+### 拉取请求预览
+
+打开、更新或重新打开拉取请求时，GitHub Actions 工作流 [`.github/workflows/pr-preview.yml`](.github/workflows/pr-preview.yml) 用仓库锁定的 pnpm 12.15.0 安装依赖，执行 `pnpm run build`，再执行 `wrangler versions upload`。这次上传只创建一个尚未承接生产流量的 Worker 版本，并在该拉取请求上发表或更新同一条评论，写上临时公开预览地址。再次推送会取消同一请求上仍在运行的预览任务，然后更新这条评论。关闭或合并拉取请求时，工作流删除该请求上传的版本，预览地址随之失效。
+
+预览和生产共用 Worker 名称 `tool-set` 与现有的 `PERSONAS_DB` 绑定，不另建预览数据库，因此预览读到的是线上人设库。上传显式选择顶层配置，不使用 `env.local`。令牌只放在仓库 Secrets 中，名称是 `CLOUDFLARE_ACCOUNT_ID` 和 `CLOUDFLARE_API_TOKEN`。该 API 令牌需要对已有的 `tool-set` Worker 具备 Editor 权限（旧权限名 Workers Scripts Edit）；`versions upload` 会先读取该 Worker，缺少权限时不会上传。Workers Builds 的生产分支、构建命令和部署命令保持不变。版本预览地址的格式见 [Version URLs](https://developers.cloudflare.com/workers/versions-and-deployments/version-urls/)。
 
 配置保存后，推送一次提交，并在 Cloudflare 构建记录中核对提交标识和部署结果，确认触发链路实际运行。自动部署配置参考 [Workers Builds 官方文档](https://developers.cloudflare.com/workers/ci-cd/builds/)。
 
