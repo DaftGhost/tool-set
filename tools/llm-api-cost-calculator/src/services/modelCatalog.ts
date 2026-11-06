@@ -1,4 +1,5 @@
 import type { CacheDurationPrice, ContextTierPrice, ModelPriceSource } from '../domain/cost'
+import { ModelPrice } from '../domain/modelPrice'
 
 const MODELS_DEV_API = 'https://models.dev/catalog.json'
 
@@ -25,10 +26,6 @@ function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value)
 }
 
-function isPrice(value: unknown): value is number {
-  return typeof value === 'number' && Number.isFinite(value) && value >= 0
-}
-
 function isName(value: unknown): value is string {
   return typeof value === 'string' && value.trim().length > 0 && value.length <= 160
 }
@@ -44,14 +41,14 @@ type BasePrices = Readonly<{
 /** Reads models.dev cost objects. Tiers and write durations are copied from the payload only. */
 export class CatalogCost {
   static read(cost: unknown): (BasePrices & { contextTiers: ContextTierPrice[] }) | null {
-    if (!isRecord(cost) || !isPrice(cost.input) || !isPrice(cost.output)) return null
-    if (cost.cache_read != null && !isPrice(cost.cache_read)) return null
+    if (!isRecord(cost) || !ModelPrice.isPrice(cost.input) || !ModelPrice.isPrice(cost.output)) return null
+    if (cost.cache_read != null && !ModelPrice.isPrice(cost.cache_read)) return null
 
     const write = CatalogCost.cacheWrite(cost.cache_write, 0)
     const base: BasePrices = {
       inputUsdPerMillion: cost.input,
       outputUsdPerMillion: cost.output,
-      cacheReadUsdPerMillion: isPrice(cost.cache_read) ? cost.cache_read : cost.input,
+      cacheReadUsdPerMillion: ModelPrice.isPrice(cost.cache_read) ? cost.cache_read : cost.input,
       cacheWriteUsdPerMillion: write.price,
       cacheTtls: write.ttls,
     }
@@ -94,12 +91,12 @@ export class CatalogCost {
 
   /** A number is one write price. A map of durations is a picker. Anything else is not a duration list. */
   static cacheWrite(value: unknown, fallbackPrice: number): { price: number; ttls: CacheDurationPrice[] } {
-    if (isPrice(value)) return { price: value, ttls: [] }
+    if (ModelPrice.isPrice(value)) return { price: value, ttls: [] }
     if (!isRecord(value)) return { price: fallbackPrice, ttls: [] }
 
     const ttls: CacheDurationPrice[] = []
     for (const [id, price] of Object.entries(value)) {
-      if (!CatalogCost.isDurationKey(id) || !isPrice(price)) continue
+      if (!CatalogCost.isDurationKey(id) || !ModelPrice.isPrice(price)) continue
       ttls.push({ id, writeUsdPerMillion: price })
     }
     const ordered = CatalogCost.orderDurations(ttls)
@@ -132,13 +129,13 @@ export class CatalogCost {
     return keys.some((key) => {
       const value = raw[key]
       if (value === undefined) return false
-      if (isPrice(value)) return value > 0
-      return key === 'cache_write' && isRecord(value) && Object.values(value).some((price) => isPrice(price) && price > 0)
+      if (ModelPrice.isPrice(value)) return value > 0
+      return key === 'cache_write' && isRecord(value) && Object.values(value).some((price) => ModelPrice.isPrice(price) && price > 0)
     })
   }
 
   static priceOr(value: unknown, fallback: number): number {
-    return isPrice(value) ? value : fallback
+    return ModelPrice.isPrice(value) ? value : fallback
   }
 }
 

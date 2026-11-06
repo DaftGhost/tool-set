@@ -1,16 +1,15 @@
-import type { CacheDurationPrice, ContextTierPrice, CustomTtlRow, ModelPriceSource, ScenarioDraft } from './cost'
+import type { ModelPriceSource, ScenarioDraft } from './cost'
+import { ModelPrice } from './modelPrice'
 import { ContextPricing } from './pricing'
 
 export const MAX_SCENARIOS = 16
-export const MAX_CUSTOM_TTLS = 8
 
-function blankCacheFields(): Pick<ScenarioDraft, 'cacheWritePercent' | 'cacheWritePrice' | 'contextTier' | 'cacheTtlId' | 'customTtls'> {
+function blankCacheFields(): Pick<ScenarioDraft, 'cacheWritePercent' | 'cacheWritePrice' | 'contextTier' | 'cacheTtlId'> {
   return {
     cacheWritePercent: '5',
     cacheWritePrice: '0',
     contextTier: 'auto',
     cacheTtlId: '',
-    customTtls: [],
   }
 }
 
@@ -51,79 +50,13 @@ export function cloneScenario(source: ScenarioDraft, scenarios: readonly Scenari
 
   const scenario = {
     ...source,
-    customTtls: source.customTtls.map((row) => ({ ...row })),
     id: `scenario-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`,
     name: nextScenarioName(scenarios),
   }
   delete scenario.modelPriceSource
+  // Archived custom TTL rows are not a scenario field. A spread of an old object must not keep them.
+  delete (scenario as { customTtls?: unknown }).customTtls
   return scenario
-}
-
-function isCacheDuration(value: unknown): boolean {
-  if (typeof value !== 'object' || value === null) return false
-  const record = value as Record<string, unknown>
-  return typeof record.id === 'string'
-    && record.id.length > 0
-    && record.id.length <= 16
-    && typeof record.writeUsdPerMillion === 'number'
-    && Number.isFinite(record.writeUsdPerMillion)
-    && record.writeUsdPerMillion >= 0
-}
-
-function isCacheDurationList(value: unknown): boolean {
-  return value === undefined || (Array.isArray(value) && value.length <= 8 && value.every(isCacheDuration))
-}
-
-function isContextTierPrice(value: unknown): value is ContextTierPrice {
-  if (typeof value !== 'object' || value === null) return false
-  const record = value as Record<string, unknown>
-  const prices = [record.inputUsdPerMillion, record.cacheReadUsdPerMillion, record.cacheWriteUsdPerMillion, record.outputUsdPerMillion]
-  return typeof record.aboveTokens === 'number'
-    && Number.isInteger(record.aboveTokens)
-    && record.aboveTokens > 0
-    && record.aboveTokens <= 100_000_000
-    && prices.every((price) => typeof price === 'number' && Number.isFinite(price) && price >= 0)
-    && isCacheDurationList(record.cacheTtls)
-}
-
-function isModelPriceSource(value: unknown): value is ModelPriceSource {
-  if (typeof value !== 'object' || value === null) return false
-  const record = value as Record<string, unknown>
-  const identifiers = ['providerId', 'providerName', 'modelId', 'modelName']
-  const hasValidIdentifiers = identifiers.every((field) =>
-    typeof record[field] === 'string'
-    && record[field].trim().length > 0
-    && record[field].length <= 160,
-  )
-  const prices = [record.inputUsdPerMillion, record.cacheReadUsdPerMillion, record.outputUsdPerMillion]
-  const hasValidPrices = prices.every((price) =>
-    typeof price === 'number'
-    && Number.isFinite(price)
-    && price >= 0,
-  )
-  const hasValidWrite = record.cacheWriteUsdPerMillion === undefined
-    || (typeof record.cacheWriteUsdPerMillion === 'number'
-      && Number.isFinite(record.cacheWriteUsdPerMillion)
-      && record.cacheWriteUsdPerMillion >= 0)
-  const hasValidTiers = record.contextTiers === undefined
-    || (Array.isArray(record.contextTiers) && record.contextTiers.length <= 32 && record.contextTiers.every(isContextTierPrice))
-  const hasValidTtls = isCacheDurationList(record.cacheTtls)
-  const hasValidLastUpdated = record.lastUpdated === null
-    || (typeof record.lastUpdated === 'string' && record.lastUpdated.length <= 32)
-
-  return hasValidIdentifiers && hasValidPrices && hasValidWrite && hasValidTiers && hasValidTtls && hasValidLastUpdated
-}
-
-function isCustomTtlRow(value: unknown): value is CustomTtlRow {
-  if (typeof value !== 'object' || value === null) return false
-  const record = value as Record<string, unknown>
-  return typeof record.id === 'string'
-    && record.id.trim().length > 0
-    && record.id.length <= 40
-    && typeof record.label === 'string'
-    && record.label.length <= 32
-    && typeof record.writePrice === 'string'
-    && record.writePrice.length <= 64
 }
 
 function optionalString(record: Record<string, unknown>, field: string, maxLength: number): boolean {
@@ -150,52 +83,20 @@ export function isScenarioDraft(value: unknown): value is ScenarioDraft {
     && optionalString(record, 'cacheWritePrice', 64)
     && optionalString(record, 'contextTier', 32)
     && optionalString(record, 'cacheTtlId', 40)
-    && (record.customTtls === undefined
-      || (Array.isArray(record.customTtls) && record.customTtls.length <= MAX_CUSTOM_TTLS && record.customTtls.every(isCustomTtlRow)))
-    && (record.modelPriceSource === undefined || isModelPriceSource(record.modelPriceSource))
-}
-
-function copyDurations(value: unknown): CacheDurationPrice[] | undefined {
-  if (!Array.isArray(value)) return undefined
-  return value.map((item) => {
-    const record = item as CacheDurationPrice
-    return { id: record.id, writeUsdPerMillion: record.writeUsdPerMillion }
-  })
+    && (record.modelPriceSource === undefined || ModelPrice.isSource(record.modelPriceSource))
 }
 
 export function normalizeModelPriceSource(source: ModelPriceSource): ModelPriceSource {
-  const record = source as ModelPriceSource & { cacheWriteUsdPerMillion?: number; contextTiers?: readonly ContextTierPrice[] }
-  const cacheTtls = copyDurations(record.cacheTtls)
-  return {
-    providerId: source.providerId,
-    providerName: source.providerName,
-    modelId: source.modelId,
-    modelName: source.modelName,
-    inputUsdPerMillion: source.inputUsdPerMillion,
-    cacheReadUsdPerMillion: source.cacheReadUsdPerMillion,
-    cacheWriteUsdPerMillion: typeof record.cacheWriteUsdPerMillion === 'number' ? record.cacheWriteUsdPerMillion : 0,
-    ...(cacheTtls ? { cacheTtls } : {}),
-    outputUsdPerMillion: source.outputUsdPerMillion,
-    contextTiers: Array.isArray(record.contextTiers)
-      ? record.contextTiers.map((tier) => {
-          const tierTtls = copyDurations(tier.cacheTtls)
-          return tierTtls ? { ...tier, cacheTtls: tierTtls } : { ...tier }
-        })
-      : [],
-    lastUpdated: source.lastUpdated,
-  }
+  return ModelPrice.normalize(source)
 }
 
 function displayZero(value: string | undefined): string {
   return typeof value === 'string' && value.trim() !== '' ? value : '0'
 }
 
-/** Fills fields added after the first save. A saved manual context tier is priced from the input token count. */
+/** Fills fields added after the first save. A saved manual context tier is priced from the input token count. Archived customTtls are ignored. */
 export function normalizeScenarioDraft(value: ScenarioDraft, usdToCny?: number): ScenarioDraft {
   const record = value as ScenarioDraft & Record<string, unknown>
-  const customTtls = Array.isArray(record.customTtls)
-    ? record.customTtls.map((row) => ({ ...row }))
-    : []
   const storedTier = typeof record.contextTier === 'string' ? record.contextTier.trim() : ''
   const manualTier = storedTier !== '' && storedTier !== 'auto'
   const normalized: ScenarioDraft = {
@@ -211,7 +112,6 @@ export function normalizeScenarioDraft(value: ScenarioDraft, usdToCny?: number):
     outputPrice: displayZero(value.outputPrice),
     contextTier: 'auto',
     cacheTtlId: typeof record.cacheTtlId === 'string' ? record.cacheTtlId : '',
-    customTtls,
   }
   if (value.modelPriceSource) normalized.modelPriceSource = normalizeModelPriceSource(value.modelPriceSource)
   if (!manualTier || usdToCny === undefined || !normalized.modelPriceSource) return normalized
