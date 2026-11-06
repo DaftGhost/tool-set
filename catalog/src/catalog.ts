@@ -7,11 +7,6 @@ export interface CatalogTool {
   href: string
 }
 
-export interface CatalogGroup {
-  category: string
-  tools: CatalogTool[]
-}
-
 interface CatalogResponse {
   ok: boolean
   status?: number
@@ -51,31 +46,32 @@ export async function loadCatalogData(
   return parseCatalog(await response.json())
 }
 
-export function groupCatalogTools(tools: CatalogTool[]): CatalogGroup[] {
-  const groups = new Map<string, CatalogTool[]>()
-
-  for (const tool of tools) {
-    const group = groups.get(tool.category)
-    if (group) group.push(tool)
-    else groups.set(tool.category, [tool])
-  }
-
-  return [...groups].map(([category, groupedTools]) => ({ category, tools: groupedTools }))
+interface CatalogCardEntry {
+  glyph: CatalogGlyph
+  tags: readonly string[]
 }
 
 export class CatalogCards {
-  static tags: Record<string, readonly string[]> = {
-    'llm-api-cost-calculator': ['多方案对比', 'USD / CNY', '图表'],
-    'text-formatter': ['JSON', 'XML', 'SQL'],
-    'privacy-profile-generator': ['隐私保护', '本地生成'],
-    'random-persona-generator': ['人物档案', '一键复制', '本地历史'],
+  static glyphs = ['yen', 'page', 'shield', 'person'] as const
+
+  static entries: Record<string, CatalogCardEntry> = {
+    'llm-api-cost-calculator': { glyph: 'yen', tags: ['多方案对比', 'USD / CNY', '图表'] },
+    'text-formatter': { glyph: 'page', tags: ['JSON', 'XML', 'SQL'] },
+    'privacy-profile-generator': { glyph: 'shield', tags: ['隐私保护', '本地生成'] },
+    'random-persona-generator': { glyph: 'person', tags: ['人物档案', '一键复制', '本地历史'] },
+  }
+
+  static glyphFor(tool: CatalogTool): CatalogGlyph | 'square' {
+    return CatalogCards.entries[tool.slug]?.glyph ?? 'square'
   }
 
   static tagsFor(tool: CatalogTool): string[] {
-    const known = CatalogCards.tags[tool.slug]
-    return known ? [...known] : [tool.category, tool.actionLabel]
+    const tags = CatalogCards.entries[tool.slug]?.tags
+    return tags ? [...tags] : [tool.category, tool.actionLabel]
   }
 }
+
+export type CatalogGlyph = (typeof CatalogCards.glyphs)[number]
 
 export class CatalogSearch {
   static normalize(query: string): string {

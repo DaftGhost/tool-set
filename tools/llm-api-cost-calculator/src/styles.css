@@ -17,8 +17,8 @@
   padding-bottom: var(--spacing-footer);
 
   @media (width < theme(--breakpoint-stack)) {
-    width: min(100% - 2 * var(--spacing-gutter-stack), 740px);
-    padding-top: 36px;
+    width: min(100% - 2 * var(--spacing-gutter-stack), var(--container-stack));
+    padding-top: var(--spacing-block-stack);
   }
 
   @media (width < theme(--breakpoint-phone)) {

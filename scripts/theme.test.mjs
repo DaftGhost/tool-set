@@ -167,15 +167,95 @@ class ThemeGuard {
     return violations
   }
 
-  static strayHex() {
-    const files = [
-      ...ThemeGuard.sourceFiles(path.join(repositoryRoot, 'styles'), '.css'),
-      ...ThemeGuard.sourceFiles(path.join(repositoryRoot, 'catalog'), '.css'),
-    ]
-    return files
-      .filter((file) => path.basename(file) !== 'theme.css')
-      .filter((file) => /#[0-9A-Fa-f]{3,8}\b/.test(readFileSync(file, 'utf8')))
+  static cssRoots() {
+    return ['styles', 'catalog', 'tools', 'shared']
+  }
+
+  static scannedCss() {
+    return ThemeGuard.cssRoots().flatMap((root) => ThemeGuard.sourceFiles(path.join(repositoryRoot, root), '.css'))
+  }
+
+  static componentCss() {
+    return ThemeGuard.scannedCss().filter((file) => path.basename(file) !== 'theme.css')
+  }
+
+  static hasRawColor(css) {
+    return /#[0-9A-Fa-f]{3,8}\b|rgb\(|hsl\(|hwb\(|oklch\(|oklab\(/.test(css)
+  }
+
+  static strayColors() {
+    return ThemeGuard.componentCss()
+      .filter((file) => ThemeGuard.hasRawColor(readFileSync(file, 'utf8')))
       .map((file) => path.relative(repositoryRoot, file))
+  }
+
+  static applyStrings(css) {
+    return [...css.matchAll(/@apply\s+([^;]+);/g)].map((match) => match[1].replace(/\s+/g, ' ').trim())
+  }
+
+  static applyViolationsIn(css, tokens, label = '') {
+    const violations = []
+    for (const classString of ThemeGuard.applyStrings(css)) {
+      for (const violation of ThemeGuard.violations(classString, tokens)) {
+        violations.push(`${label}${violation}`)
+      }
+    }
+    return violations
+  }
+
+  static applyViolations(tokens) {
+    const violations = []
+    for (const file of ThemeGuard.componentCss()) {
+      const label = `${path.relative(repositoryRoot, file)}: `
+      violations.push(...ThemeGuard.applyViolationsIn(readFileSync(file, 'utf8'), tokens, label))
+    }
+    return violations
+  }
+
+  static utilityBlocks(css) {
+    const blocks = []
+    for (const match of css.matchAll(/@utility\s+([A-Za-z0-9_-]+)\s*\{/g)) {
+      const open = match.index + match[0].length
+      blocks.push({ name: match[1], body: css.slice(open, ThemeGuard.closingBrace(css, open)) })
+    }
+    return blocks
+  }
+
+  static closingBrace(css, open) {
+    let depth = 1
+    for (let index = open; index < css.length; index += 1) {
+      const character = css[index]
+      if (character === '{') depth += 1
+      else if (character === '}') {
+        depth -= 1
+        if (depth === 0) return index
+      }
+    }
+    return css.length
+  }
+
+  static rewritesPageFrame(body) {
+    return /100%\s*-\s*2\s*\*\s*var\(--spacing-gutter/.test(body)
+  }
+
+  static frameLengthViolations(css, label = '') {
+    const violations = []
+    for (const block of ThemeGuard.utilityBlocks(css)) {
+      if (!ThemeGuard.rewritesPageFrame(block.body)) continue
+      for (const length of block.body.match(/\d+(?:\.\d+)?px/g) ?? []) {
+        violations.push(`${label}${block.name}: ${length}`)
+      }
+    }
+    return violations
+  }
+
+  static componentFrameLengths() {
+    const violations = []
+    for (const file of ThemeGuard.componentCss()) {
+      const label = `${path.relative(repositoryRoot, file)}: `
+      violations.push(...ThemeGuard.frameLengthViolations(readFileSync(file, 'utf8'), label))
+    }
+    return violations
   }
 }
 
@@ -214,8 +294,52 @@ test('class strings stay on theme utilities', () => {
     'font-serif',
   ])
   assert.deepEqual(ThemeGuard.classViolations(tokens), [])
+  assert.deepEqual(ThemeGuard.applyViolationsIn('@apply bg-canvas pt-block;', tokens), [])
+  assert.deepEqual(ThemeGuard.applyViolationsIn('@apply bg-red-500 p-6;', tokens), ['bg-red-500', 'p-6'])
+  assert.deepEqual(ThemeGuard.applyViolations(tokens), [])
 })
 
-test('component css outside the theme file has no hex colors', () => {
-  assert.deepEqual(ThemeGuard.strayHex(), [])
+test('theme guard scans styles, catalog, tool, and shared css', () => {
+  const expected = ['styles', 'catalog', 'tools', 'shared'].flatMap((root) => (
+    ThemeGuard.sourceFiles(path.join(repositoryRoot, root), '.css').map((file) => path.relative(repositoryRoot, file))
+  )).sort()
+
+  assert.deepEqual(ThemeGuard.scannedCss().map((file) => path.relative(repositoryRoot, file)).sort(), expected)
+  assert.ok(expected.includes('styles/theme.css'))
+  assert.ok(expected.includes('styles/base.css'))
+  assert.ok(expected.includes('catalog/src/styles.css'))
+  assert.ok(expected.includes('shared/home-orb/home-orb.css'))
+  assert.ok(expected.includes('tools/llm-api-cost-calculator/src/styles.css'))
+  assert.ok(expected.includes('tools/llm-api-cost-calculator/src/chart.css'))
+  assert.ok(expected.includes('tools/privacy-profile-generator/src/styles.css'))
+  assert.ok(expected.includes('tools/random-persona-generator/src/styles.css'))
+  assert.ok(expected.includes('tools/text-formatter/src/styles.css'))
+})
+
+test('component css outside the theme file has no raw colors', () => {
+  assert.equal(ThemeGuard.hasRawColor('color: #fff; background: rgb(0 0 0);'), true)
+  assert.equal(ThemeGuard.hasRawColor('color: hsl(0 0% 0%);'), true)
+  assert.equal(ThemeGuard.hasRawColor('color: var(--color-ink);'), false)
+  assert.deepEqual(ThemeGuard.strayColors(), [])
+})
+
+test('page-frame rewrites keep lengths on theme tokens', () => {
+  assert.deepEqual(ThemeGuard.frameLengthViolations(`
+    @utility content-frame {
+      width: min(100% - 2 * var(--spacing-gutter-stack), 740px);
+      padding-top: 36px;
+    }
+  `), ['content-frame: 740px', 'content-frame: 36px'])
+  assert.deepEqual(ThemeGuard.frameLengthViolations(`
+    @utility content-frame {
+      width: min(100% - 2 * var(--spacing-gutter-stack), var(--container-stack));
+      padding-top: var(--spacing-block-stack);
+    }
+  `), [])
+  assert.deepEqual(ThemeGuard.frameLengthViolations(`
+    @utility stepper {
+      height: 42px;
+    }
+  `), [])
+  assert.deepEqual(ThemeGuard.componentFrameLengths(), [])
 })
