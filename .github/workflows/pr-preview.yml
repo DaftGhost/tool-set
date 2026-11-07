@@ -10,6 +10,7 @@ concurrency:
 
 permissions:
   contents: read
+  checks: read
   issues: write
   pull-requests: write
 
@@ -136,6 +137,63 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
+      - name: Wait for Workers Builds
+        if: github.event.pull_request.merged == true
+        env:
+          MERGE_COMMIT_SHA: ${{ github.event.pull_request.merge_commit_sha }}
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          check_name="Workers Builds: tool-set"
+          workers_builds_timeout_seconds=480
+          if [[ -z "${GH_TOKEN}" ]]; then
+            echo "GITHUB_TOKEN is required to read check runs." >&2
+            exit 1
+          fi
+          if [[ ! "${MERGE_COMMIT_SHA}" =~ ^[0-9a-f]{40}$ ]]; then
+            echo "Merged pull request has no merge commit SHA. Refusing to delete preview versions before ${check_name} succeeds." >&2
+            exit 1
+          fi
+          echo "Waiting up to ${workers_builds_timeout_seconds}s for ${check_name} to succeed on ${MERGE_COMMIT_SHA}."
+          deadline=$((SECONDS + workers_builds_timeout_seconds))
+          query=$(jq -nr --arg name "${check_name}" '$name|@uri')
+          while true; do
+            response_file="${RUNNER_TEMP}/workers-builds-check.json"
+            status=$(curl -sS -o "${response_file}" -w '%{http_code}' \
+              -H "Authorization: Bearer ${GH_TOKEN}" \
+              -H "Accept: application/vnd.github+json" \
+              -H "X-GitHub-Api-Version: 2022-11-28" \
+              "https://api.github.com/repos/${GITHUB_REPOSITORY}/commits/${MERGE_COMMIT_SHA}/check-runs?check_name=${query}&filter=all&per_page=100" || true)
+            conclusion="pending"
+            if [[ "${status}" == "200" ]]; then
+              conclusion=$(jq -r --arg name "${check_name}" '
+                [.check_runs[]? | select(.name == $name)]
+                | sort_by(.started_at // "")
+                | last
+                | .conclusion // "pending"
+              ' "${response_file}")
+            elif [[ "${status}" == "401" || "${status}" == "403" ]]; then
+              echo "Cannot read ${check_name} on ${MERGE_COMMIT_SHA} (HTTP ${status})." >&2
+              cat "${response_file}" >&2
+              exit 1
+            else
+              echo "Check run lookup for ${MERGE_COMMIT_SHA} returned HTTP ${status:-curl failure}; retrying." >&2
+            fi
+            if [[ "${conclusion}" == "success" ]]; then
+              echo "${check_name} succeeded on ${MERGE_COMMIT_SHA}."
+              break
+            fi
+            if [[ "${conclusion}" != "pending" ]]; then
+              echo "${check_name} on ${MERGE_COMMIT_SHA} concluded ${conclusion}. Refusing to delete preview versions." >&2
+              exit 1
+            fi
+            if (( SECONDS >= deadline )); then
+              echo "Timed out waiting for ${check_name} to succeed on ${MERGE_COMMIT_SHA}." >&2
+              exit 1
+            fi
+            sleep 10
+          done
+
       - name: Delete uploaded Worker versions
         env:
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
