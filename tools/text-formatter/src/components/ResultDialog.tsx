@@ -1,4 +1,5 @@
 import { useEffect, useId } from 'react'
+import { FormatterButtons } from './formatterButtons'
 
 interface ResultDialogProps {
   output: string
@@ -6,9 +7,6 @@ interface ResultDialogProps {
   onClose: () => void
   onCopy: () => void
 }
-
-const quietButton = 'inline-flex min-h-control cursor-pointer items-center justify-center rounded-control border border-line bg-primary-soft px-3 text-ui font-semibold text-primary-deep transition-colors hover:bg-primary-soft-hover'
-const primaryButton = 'inline-flex min-h-control cursor-pointer items-center justify-center rounded-control border border-primary bg-primary px-4 text-label font-bold text-on-deep transition-colors hover:border-primary-deep hover:bg-primary-deep'
 
 export class EditorField {
   static classes(): string {
@@ -46,7 +44,7 @@ export function ResultDialog({ output, copyMessage, onClose, onCopy }: ResultDia
       >
         <div className="flex items-center justify-between gap-3">
           <h2 className="m-0 text-title text-ink" id={titleId}>格式化结果</h2>
-          <button className={quietButton} onClick={onClose} type="button">关闭</button>
+          <button className={FormatterButtons.quiet()} onClick={onClose} type="button">关闭</button>
         </div>
         <textarea
           aria-label="展开的格式化结果"
@@ -57,7 +55,7 @@ export function ResultDialog({ output, copyMessage, onClose, onCopy }: ResultDia
         />
         <div className="mt-3 flex items-center justify-end gap-3">
           <p aria-live="polite" className="m-0 mr-auto min-h-5 text-ui text-primary-deep" role="status">{copyMessage}</p>
-          <button className={primaryButton} onClick={onCopy} type="button">复制</button>
+          <button className={FormatterButtons.primary()} onClick={onCopy} type="button">复制</button>
         </div>
       </section>
     </div>

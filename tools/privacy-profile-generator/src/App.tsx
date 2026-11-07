@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
+import { BrowserClipboard, type ClipboardPort } from '../../../shared/browser-clipboard/browserClipboard'
 import { HomeOrb } from '../../../shared/home-orb/HomeOrb'
-import { BrowserClipboard, type ClipboardPort } from './browser/clipboard'
 import { ProfileFieldRow } from './components/ProfileFieldRow'
 import { profileRegions, type ProfileSnapshot, type RegionId } from './domain/profile'
 import { emptyRegionFieldRegistry, type RegionFieldRegistry } from './domain/regionFieldRegistry'

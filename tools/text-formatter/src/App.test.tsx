@@ -2,7 +2,7 @@ import { render, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it, vi } from 'vitest'
 import { TextFormatterApp } from './App'
-import type { ClipboardPort } from './browser/clipboard'
+import type { ClipboardPort } from '../../../shared/browser-clipboard/browserClipboard'
 import { SchemeRepository } from './storage/schemeRepository'
 
 class MemoryStorage implements Storage {

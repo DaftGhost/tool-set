@@ -1,4 +1,5 @@
 import { FormatOptionsModel, SchemeCatalog, type FormatScheme, type TextKind } from '../domain/formatModel'
+import { FormatterButtons } from './formatterButtons'
 
 interface SchemeBoardProps {
   inputEmpty: boolean
@@ -10,9 +11,6 @@ interface SchemeBoardProps {
   onEdit: (scheme: FormatScheme) => void
   onDelete: (scheme: FormatScheme) => void
 }
-
-const quietButton = 'inline-flex min-h-control cursor-pointer items-center justify-center rounded-control border border-line bg-primary-soft px-3 text-ui font-semibold text-primary-deep transition-colors hover:bg-primary-soft-hover'
-const primaryButton = 'inline-flex min-h-control cursor-pointer items-center justify-center rounded-control border border-primary bg-primary px-4 text-label font-bold text-on-deep transition-colors hover:border-primary-deep hover:bg-primary-deep'
 
 export function SchemeBoard({
   inputEmpty,
@@ -39,7 +37,7 @@ export function SchemeBoard({
             {inputEmpty ? '没有文本时，三种类型和内置方案都列在这里。' : '有文本时只保留当前类型的方案。'}
           </p>
         </div>
-        <button className={primaryButton} onClick={onCreate} type="button">新建方案</button>
+        <button className={FormatterButtons.primary()} onClick={onCreate} type="button">新建方案</button>
       </div>
 
       {groups.length === 0 && (
@@ -72,7 +70,7 @@ export function SchemeBoard({
                     </button>
                     {!scheme.builtin && (
                       <div className="mt-2 flex gap-2">
-                        <button className={quietButton} onClick={() => onEdit(scheme)} type="button">编辑选项</button>
+                        <button className={FormatterButtons.quiet()} onClick={() => onEdit(scheme)} type="button">编辑选项</button>
                         <button className="inline-flex min-h-control cursor-pointer items-center rounded-control border border-transparent bg-transparent px-2 text-ui font-semibold text-clay hover:bg-clay-soft" onClick={() => onDelete(scheme)} type="button">
                           删除{scheme.name}
                         </button>
